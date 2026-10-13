@@ -57,11 +57,11 @@ async function scanFrame(){
   canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);
   canvas.getContext("2d",{willReadFrequently:true}).drawImage(video,0,0,canvas.width,canvas.height);
   const T=await loadOCR(),result=await T.recognize(canvas,"eng"),text=(result&&result.data?result.data.text:"").trim();
-  if(text && text!==lastFrameText){sessionFrames.push({time:new Date().toLocaleTimeString(),text});lastFrameText=text;if(sessionFrames.length>180)sessionFrames.shift();}
-  const count=$("gl-session-count");if(count)count.textContent=sessionFrames.length+" distinct text snapshots collected";
+  if(text){sessionFrames.push({time:new Date().toLocaleTimeString(),text});lastFrameText=text;if(sessionFrames.length>600)sessionFrames.shift();}
+  const count=$("gl-session-count");if(count)count.textContent=sessionFrames.length+" snapshots collected";
   status("gl-live-note","Collecting locally: "+sessionFrames.length+" snapshots. Scroll through the relevant code; press Stop & review session when finished.","good");
  }catch(e){status("gl-live-note",e.message||"Could not scan this frame.","error");}
- finally{busy=false;}
+ finally{busy=false;if(stream)timer=setTimeout(scanFrame,0);}
 }
 function reviewSession(){
  const text=sessionFrames.map((f,i)=>"[Snapshot "+(i+1)+" · "+f.time+"]\\n"+f.text).join("\\n\\n");
@@ -81,7 +81,7 @@ async function startCapture(){
   const count=$("gl-session-count");if(count)count.textContent="Session started; collecting snapshots…";
   status("gl-live-note","Screen sharing is active. Text is collected locally every few seconds and reviewed together after you stop. Scroll through the code/error states you want included.","good");
   stream.getVideoTracks()[0].addEventListener("ended",()=>stopCapture("Browser screen sharing ended."));
-  await scanFrame();timer=setInterval(scanFrame,5000);
+  await scanFrame();
  }catch(e){stream=null;status("gl-live-note",e.name==="NotAllowedError"||e.name==="AbortError"?"Sharing was cancelled or permission denied. Nothing is captured.":(e.message||"Could not start sharing."),"error");}
 }
 if($("gl-start"))$("gl-start").addEventListener("click",startCapture);
