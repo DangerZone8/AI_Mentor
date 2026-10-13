@@ -116,6 +116,12 @@ body.light-mode .cq-sev.high{background:#ffe1e7;color:#a3243d}body.light-mode .c
     <button data-page="guild"><span class="ico">⚔</span> Guild Hall</button>
     <button data-page="cursed"><span class="ico">☠</span> Cursed Lab</button>
   </nav>
+  <div class="nav-label" style="margin-top:17px">DEVELOPER</div>
+  <nav class="nav" aria-label="Developer tools">
+    <button data-page="ghostlab"><span class="ico">👻</span> Ghost Lab</button>
+    <button data-page="timetravel"><span class="ico">⏳</span> Time Travel</button>
+    <button data-page="adventure"><span class="ico">🧭</span> Adventure</button>
+  </nav>
   <div class="nav-label" style="margin-top:17px">YOUR ACCOUNT</div>
   <nav class="nav">
     <button data-page="profile"><span class="ico">◎</span> Profile & settings</button>
@@ -214,6 +220,50 @@ Output: 8</pre><h4>CONCEPTS</h4><div id="wsConcepts" class="btn-row"><span class
 <div class="panel" style="margin-top:16px"><div class="panel-title"><h3>Curse log</h3><small id="curseCounter">0 cursed twists</small></div><div id="curseLog" class="muted" style="font-size:12px">No curses yet. A failed submission may awaken one.</div></div>
 </section>
 <section class="page" id="page-profile"><div class="page-heading"><div><div class="eyebrow">MAKE IT YOURS</div><h1>Profile & settings ◎</h1><p>Your profile uses Supabase after sign-in; learning preferences remain local to this browser for now.</p></div></div><div class="profile-layout"><div class="panel profile-card"><div class="avatar big-avatar" id="profileAvatar">G</div><h2 id="profileNameDisplay">Guest Learner</h2><p class="muted" id="profileEmailDisplay">Local profile · not signed in</p><span class="tag purple">Level 1 · Local XP only</span><div style="margin-top:20px"><button class="ghost-btn" id="signoutBtn" hidden>Sign out</button></div></div><div class="panel"><div class="panel-title"><h3>Your learning profile</h3><span class="tag">Local preferences</span></div><form id="profileForm"><div class="field-row"><div class="field"><label for="profileName">Display name</label><input id="profileName" value="Guest Learner" maxlength="40" required></div><div class="field"><label for="profileEmail">Account email</label><input id="profileEmail" type="email" placeholder="Sign in to connect an account" readonly></div></div><div class="field-row"><div class="field"><label for="goalSelect">Learning goal</label><select id="goalSelect"><option>Build my fundamentals</option><option>Get better at debugging</option><option>Prepare for interviews</option><option>Understand real codebases</option></select></div><div class="field"><label for="langSelect">Preferred language</label><select id="langSelect"><option>Python</option><option>JavaScript</option><option>TypeScript</option><option>Java</option><option>C++</option></select></div></div><div class="field"><label for="aboutMe">About your learning journey</label><textarea id="aboutMe" placeholder="What are you hoping to build?"></textarea></div><div class="field"><label><input type="checkbox" id="notifyToggle" style="width:auto;margin-right:8px"> Enable local reminder preference</label></div><button class="primary-btn" type="submit">Save profile changes</button></form><hr style="border:0;border-top:1px solid var(--line);margin:24px 0"><h3 style="font-size:14px">Sign-in options</h3><p class="muted" style="font-size:12px">Use Google or your email and password. Account authentication requires Supabase configuration.</p><button class="soft-btn" id="profileAuth">Sign in / create account</button></div></div></section>
+
+<section class="page" id="page-ghostlab">
+  <div class="page-heading"><div><div class="eyebrow">DEVELOPER · LIVE ASSIST</div><h1>👻 Ghost Lab</h1><p>Opt in to share a screen or browser tab. Ghost Lab looks for visible coding context and offers beginner-friendly debugging guidance.</p></div><span class="tag orange">Consent required</span></div>
+  <div class="grid two-col">
+    <div class="panel">
+      <div class="panel-title"><h3>Live coding scan</h3><span class="tag" id="gl-status">Not sharing</span></div>
+      <p class="muted" style="font-size:13px">When you press Start, your browser will ask you to choose a screen, window, or tab. Choose only a source you are allowed to share. Scanning runs only while the share is active and this page is visible.</p>
+      <div class="btn-row"><button class="primary-btn" id="gl-start">Start screen scan</button><button class="ghost-btn" id="gl-stop" disabled>Stop scanning</button><button class="soft-btn" id="gl-scan-now" disabled>Scan now</button></div>
+      <video id="gl-video" autoplay muted playsinline style="display:none;width:100%;margin-top:14px;border:1px solid var(--line);border-radius:12px"></video>
+      <div id="gl-live-note" class="repo-status" role="status" aria-live="polite">Nothing is being captured.</div>
+      <div class="field"><label for="gl-code">Or paste code / an error message for a focused review</label><textarea id="gl-code" placeholder="Paste the relevant code and error message here. Remove passwords, tokens, and private data first." rows="7"></textarea></div>
+      <button class="soft-btn" id="gl-paste-scan">Review pasted code</button>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><h3>Findings & fixes</h3><small>Only coding-related results</small></div>
+      <div id="gl-results" aria-live="polite"><p class="muted">Start a scan or paste a coding error to see findings here.</p></div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:16px"><h3>Privacy controls</h3><ul class="muted" style="font-size:12px;line-height:1.9"><li>Screen sharing starts only after your click and the browser’s own source picker.</li><li>Stop at any time using Stop scanning or your browser’s sharing indicator.</li><li>Frames are processed locally in this browser; they are not uploaded by Ghost Lab.</li><li>Scanning pauses when this tab is hidden. It cannot run after this page is closed or secretly monitor apps.</li><li>OCR may misread small text. Check any suggested fix before applying it.</li></ul></div>
+</section>
+<section class="page" id="page-timetravel">
+  <div class="page-heading"><div><div class="eyebrow">DEVELOPER · PROJECT FORECAST</div><h1>⏳ Time Travel</h1><p>Upload a project ZIP or analyze a public GitHub repository to estimate future maintenance and scaling risks from visible project evidence.</p></div></div>
+  <div class="panel">
+    <div class="field"><label for="tt-source">Public GitHub repository URL (or leave blank and upload ZIP)</label><input id="tt-source" type="url" placeholder="https://github.com/owner/repository"></div>
+    <div class="field"><label for="tt-zip">Project ZIP file</label><input id="tt-zip" type="file" accept=".zip,application/zip"></div>
+    <div class="btn-row"><button class="primary-btn" id="tt-analyze">Analyze project</button><button class="ghost-btn" id="tt-clear">Clear results</button></div>
+    <p class="small-note">Analysis is a local heuristic, not a guarantee or a real production load test. For safety, this prototype does not execute uploaded code.</p>
+    <div id="tt-status" class="repo-status" role="status" aria-live="polite"></div>
+  </div>
+  <div id="tt-results" class="grid two-col" style="margin-top:16px"></div>
+</section>
+<section class="page" id="page-adventure">
+  <div class="page-heading"><div><div class="eyebrow">DEVELOPER · WHAT-IF LAB</div><h1>🧭 Adventure</h1><p>Explore likely outcomes, missing capabilities, and prioritized improvements based on your project's actual files—not a generic template.</p></div></div>
+  <div class="panel">
+    <div class="field"><label for="adv-source">Public GitHub repository URL (or leave blank and upload ZIP)</label><input id="adv-source" type="url" placeholder="https://github.com/owner/repository"></div>
+    <div class="field"><label for="adv-zip">Project ZIP file</label><input id="adv-zip" type="file" accept=".zip,application/zip"></div>
+    <div class="field"><label for="adv-goal">What do you want to improve?</label><select id="adv-goal"><option value="product">Product usefulness and adoption</option><option value="reliability">Reliability and bug prevention</option><option value="security">Security and privacy</option><option value="scale">Performance and scale</option></select></div>
+    <div class="btn-row"><button class="primary-btn" id="adv-analyze">Generate project adventure</button><button class="ghost-btn" id="adv-clear">Clear results</button></div>
+    <p class="small-note">Suggestions are ranked hypotheses based on repository evidence. Probabilities are rough heuristic scores, not statistically validated predictions.</p>
+    <div id="adv-status" class="repo-status" role="status" aria-live="polite"></div>
+  </div>
+  <div id="adv-results" class="grid two-col" style="margin-top:16px"></div>
+</section>
+
 </div></main></div>
 <div class="toast" id="toast"></div>
 <div class="modal-backdrop" id="authBackdrop" role="presentation"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="authTitle"><button class="modal-close" type="button" id="authClose" aria-label="Close">×</button><h2 id="authTitle">Welcome to CodeQuest</h2><p id="authDescription">Sign in to save your learning profile across devices.</p><p id="authSetupNote" class="small-note" role="status"></p><button class="soft-btn" type="button" id="googleSignIn" style="width:100%">Continue with Google</button><div class="field" style="margin-top:18px"><label for="authEmail">Email</label><input id="authEmail" type="email" autocomplete="email" required></div><div class="field"><label for="authPassword">Password</label><input id="authPassword" type="password" autocomplete="current-password" minlength="8" required></div><div class="field" id="confirmPasswordField" hidden><label for="authPasswordConfirm">Confirm password</label><input id="authPasswordConfirm" type="password" autocomplete="new-password" minlength="8"></div><button class="primary-btn" type="button" id="emailAuthSubmit" style="width:100%">Sign in</button><div class="modal-switch"><span id="authSwitchPrompt">New to CodeQuest?</span> <button type="button" id="authModeSwitch">Create account</button></div><p id="authFeedback" class="muted" role="status" aria-live="polite"></p></section></div>
@@ -2176,6 +2226,6 @@ function init(){
 init();
 loadMission(currentMission.id,false);
 </script>
-<script src="./ghost-in-the-machine.js" defer></script>
+<script src="./developer-workspace.js" defer></script>
 </body>
 </html>
