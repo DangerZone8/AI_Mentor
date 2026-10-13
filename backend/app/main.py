@@ -32,7 +32,7 @@ MISSION_XP = {
 def configured_origins() -> list[str]:
     raw_origins = os.getenv(
         "CODEQUEST_CORS_ORIGINS",
-        "http://localhost:8000,http://127.0.0.1:8000",
+        "https://ai-mentor-opal.vercel.app,http://localhost:8000,http://127.0.0.1:8000",
     )
     origins = [origin.strip().rstrip("/") for origin in raw_origins.split(",")]
     origins = [origin for origin in origins if origin]
