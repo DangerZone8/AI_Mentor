@@ -47,7 +47,7 @@ function stopCapture(message){
  status("gl-live-note",message||"Screen scan stopped. Nothing is being captured.");
 }
 async function scanFrame(){
- if(!stream||!video||busy||document.hidden||video.readyState<2||!video.videoWidth)return;
+ if(!stream||!video||busy||video.readyState<2||!video.videoWidth)return;
  busy=true;
  try{
   status("gl-live-note","Reading visible text locally…");
@@ -67,7 +67,7 @@ async function startCapture(){
   video.srcObject=stream;video.style.display="block";await video.play();
   $("gl-start").disabled=true;$("gl-stop").disabled=false;$("gl-scan-now").disabled=false;
   $("gl-status").textContent="Sharing · local scan";
-  status("gl-live-note","Screen sharing is active. Local OCR runs about every 12 seconds while this tab is visible.","good");
+  status("gl-live-note","Screen sharing is active. Local OCR runs about every 12 seconds, even when you switch to another tab or app, as long as the browser keeps this page alive.","good");
   stream.getVideoTracks()[0].addEventListener("ended",()=>stopCapture("Browser screen sharing ended."));
   await scanFrame();timer=setInterval(scanFrame,12000);
  }catch(e){stream=null;status("gl-live-note",e.name==="NotAllowedError"||e.name==="AbortError"?"Sharing was cancelled or permission denied. Nothing is captured.":(e.message||"Could not start sharing."),"error");}
@@ -76,7 +76,7 @@ if($("gl-start"))$("gl-start").addEventListener("click",startCapture);
 if($("gl-stop"))$("gl-stop").addEventListener("click",()=>stopCapture());
 if($("gl-scan-now"))$("gl-scan-now").addEventListener("click",scanFrame);
 if($("gl-paste-scan"))$("gl-paste-scan").addEventListener("click",()=>showFindings("gl-results",$("gl-code").value));
-document.addEventListener("visibilitychange",()=>{if(document.hidden&&stream)status("gl-live-note","Paused because this tab is hidden. Sharing remains visible in the browser.");else if(stream)scanFrame();});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&stream)scanFrame();else if(document.hidden&&stream)status("gl-live-note","Screen sharing remains active while this tab is hidden. The browser sharing indicator stays visible; use Stop scanning to end it.");});
 window.addEventListener("pagehide",()=>stopCapture("Page closed; screen sharing stopped."));
 document.addEventListener("click",e=>{const b=e.target.closest(".gl-copy");if(!b)return;const v=b.getAttribute("data-copy")||"";if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(v).then(()=>{const old=b.textContent;b.textContent="Copied";setTimeout(()=>b.textContent=old,1200);}).catch(()=>window.prompt("Copy example fix:",v));else window.prompt("Copy example fix:",v);});
 
