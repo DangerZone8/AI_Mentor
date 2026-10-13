@@ -1752,6 +1752,30 @@ async function cqAnalyzeRepo(){
   const paths=Object.keys(snap);
   if(!paths.length)throw new Error("No files are loaded yet.");
   const base=p=>p.split("/").pop().toLowerCase();
+  // Read eligible text files across the repository before drawing conclusions.
+  const readablePaths=paths.filter(p=>!CQ_SKIP_FILE.test(p)&&!(snap[p].size&&snap[p].size>500000));
+  const MAX_ANALYSIS_FILES=350,MAX_ANALYSIS_BYTES=12000000;
+  const analysisPaths=readablePaths.slice(0,MAX_ANALYSIS_FILES);
+  let analysisBytes=0,analysisLoaded=0,analysisFailed=0;
+  await cqPool(analysisPaths,8,async p=>{
+   if(analysisBytes>=MAX_ANALYSIS_BYTES){analysisFailed++;return}
+   const t=await cqLoadContent(p);
+   if(t===null){analysisFailed++;return}
+   const size=new TextEncoder().encode(t).length;
+   if(analysisBytes+size>MAX_ANALYSIS_BYTES){analysisFailed++;return}
+   analysisBytes+=size;analysisLoaded++;
+  },(d,n)=>{if(d%20===0||d===n)tag.textContent="Reading repository "+d+"/"+n+"…"});
+  if(snap!==activeFiles)return;
+  const wholeRepoInventory=[];
+  for(const p of paths){
+   const content=snap[p]&&snap[p].content;
+   if(!content)continue;
+   const lang=cqLang(p),outline=cqOutline(content.replace(/\r\n/g,"\n").split("\n"),lang);
+   const defs=outline.defs.filter(d=>d.kind==="function"||d.kind==="method"||d.kind==="class").map(d=>d.name);
+   if(CQ_CODE_EXT.test(p)||/(^|\/)(readme[^/]*|package\.json|requirements\.txt|pyproject\.toml|dockerfile|docker-compose\.ya?ml)$/i.test(p)){
+    wholeRepoInventory.push({path:p,lang,lines:content.split("\n").length,defs,imports:outline.imports||[],preview:cqTrim(content.replace(/\s+/g," "),220)});
+   }
+  }
   let failed=0;
   // README
   const readmePath=paths.find(p=>/^readme(\.[a-z]+)?$/i.test(p))||paths.find(p=>/(^|\/)readme(\.[a-z]+)?$/i.test(p));
@@ -1825,6 +1849,12 @@ async function cqAnalyzeRepo(){
   if(moduleDetails.length){
    h+='<p class="explain-p"><b>What the imported project modules provide:</b></p><ul class="cq-ul">'+moduleDetails.map(d=>"<li><code>"+cqEsc(d.path)+"</code>"+(d.defs.length?" defines "+d.defs.slice(0,8).map(name=>"<code>"+cqEsc(name)+"</code>").join(", ")+(d.defs.length>8?" and other symbols":""):" contains no recognized function/class definitions")+(d.imports.length?"; it also imports "+d.imports.map(path=>"<code>"+cqEsc(path)+"</code>").join(", "):"")+".</li>").join("")+"</ul>";
   }
+  h+='<h4 class="explain-h">Repository-wide feature and module inventory</h4>';
+  h+='<p class="explain-p">Read '+analysisLoaded+' of '+analysisPaths.length+' eligible files ('+Math.round(analysisBytes/1024)+' KB of text). This inventory uses source and documentation across the repository, not only its entry point.</p>';
+  if(analysisFailed||readablePaths.length>analysisPaths.length)h+='<p class="explain-p muted">Coverage note: '+analysisFailed+' file(s) could not be read within browser limits; '+Math.max(0,readablePaths.length-analysisPaths.length)+' additional file(s) exceeded the file-count limit.</p>';
+  const featureFiles=wholeRepoInventory.filter(f=>/readme|feature|docs?\/|package\.json|requirements|pyproject|dockerfile|routes?|api|auth|payment|billing|database|schema|model|service|controller|component|page|test|spec/i.test(f.path));
+  if(featureFiles.length)h+='<ul class="cq-ul">'+featureFiles.slice(0,100).map(f=>'<li><code>'+cqEsc(f.path)+'</code> — '+cqEsc(f.lang)+', '+f.lines+' lines'+(f.defs.length?'; defines '+f.defs.slice(0,8).map(cqEsc).join(', '):'')+(f.imports.length?'; imports '+f.imports.slice(0,5).map(cqEsc).join(', '):'')+'<br><span class="muted">'+cqEsc(f.preview)+'</span></li>').join('')+'</ul>';
+  else h+='<p class="explain-p muted">No readable source/documentation contents were available for a feature inventory.</p>';
   h+='<h4 class="explain-h">1. README</h4>';
   if(readme){
    h+='<p class="explain-p"><code>'+cqEsc(readmePath)+"</code> — <b>"+cqEsc(readme.title||"(no title)")+"</b></p>";
