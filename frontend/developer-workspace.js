@@ -29,7 +29,7 @@ function showFindings(target,text) {
  if(!found.length){e.innerHTML='<p class="muted">No obvious pattern found. That is not proof the code is bug-free.</p>';return;}
  e.innerHTML=found.map(f=>'<article class="panel" style="padding:15px;margin:10px 0"><span class="tag orange">Possible issue</span><h3>'+esc(f.title)+'</h3><p style="font-size:12px"><b>What it means:</b> '+esc(f.reason)+'</p><p style="font-size:12px"><b>Try this:</b> '+esc(f.fix)+'</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;background:#0a1020;padding:12px;border-radius:9px;color:#b7f2df;font-size:12px">'+esc(f.patch)+'</pre><button class="soft-btn gl-copy" data-copy="'+esc(f.patch)+'">Copy example fix</button></article>').join("");
 }
-let stream=null,timer=null,busy=false,ocrPromise=null;
+let stream=null,timer=null,busy=false,ocrPromise=null,sessionFrames=[],lastFrameText="",sessionStartedAt=null;
 const video=$("gl-video");
 async function loadOCR(){
  if(window.Tesseract)return window.Tesseract;
@@ -37,6 +37,7 @@ async function loadOCR(){
  return ocrPromise;
 }
 function stopCapture(message){
+ const hadSession=!!stream;
  if(timer)clearInterval(timer);timer=null;
  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;
  if(video){video.srcObject=null;video.style.display="none";}
@@ -44,7 +45,8 @@ function stopCapture(message){
  if($("gl-stop"))$("gl-stop").disabled=true;
  if($("gl-scan-now"))$("gl-scan-now").disabled=true;
  if($("gl-status"))$("gl-status").textContent="Not sharing";
- status("gl-live-note",message||"Screen scan stopped. Nothing is being captured.");
+ status("gl-live-note",message||(hadSession?"Sharing stopped. Reviewing all captured text…":"Screen sharing stopped."));
+ if(hadSession)reviewSession();
 }
 async function scanFrame(){
  if(!stream||!video||busy||video.readyState<2||!video.videoWidth)return;
@@ -54,11 +56,19 @@ async function scanFrame(){
   const canvas=document.createElement("canvas"),scale=Math.min(1,1400/video.videoWidth);
   canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);
   canvas.getContext("2d",{willReadFrequently:true}).drawImage(video,0,0,canvas.width,canvas.height);
-  const T=await loadOCR(),result=await T.recognize(canvas,"eng"),text=result&&result.data?result.data.text:"";
-  showFindings("gl-results",text);
-  status("gl-live-note","Last local scan: "+new Date().toLocaleTimeString()+". OCR can misread text; check fixes before using them.","good");
+  const T=await loadOCR(),result=await T.recognize(canvas,"eng"),text=(result&&result.data?result.data.text:"").trim();
+  if(text && text!==lastFrameText){sessionFrames.push({time:new Date().toLocaleTimeString(),text});lastFrameText=text;if(sessionFrames.length>180)sessionFrames.shift();}
+  const count=$("gl-session-count");if(count)count.textContent=sessionFrames.length+" distinct text snapshots collected";
+  status("gl-live-note","Collecting locally: "+sessionFrames.length+" snapshots. Scroll through the relevant code; press Stop & review session when finished.","good");
  }catch(e){status("gl-live-note",e.message||"Could not scan this frame.","error");}
  finally{busy=false;}
+}
+function reviewSession(){
+ const text=sessionFrames.map((f,i)=>"[Snapshot "+(i+1)+" · "+f.time+"]\\n"+f.text).join("\\n\\n");
+ if(!text.trim()){status("gl-live-note","Sharing stopped, but no readable code was captured. Try a larger font or paste code below.","error");return;}
+ showFindings("gl-results",text);
+ const count=$("gl-session-count");if(count)count.textContent=sessionFrames.length+" snapshots reviewed · "+text.length.toLocaleString()+" characters";
+ status("gl-live-note","Session review complete. Captured "+sessionFrames.length+" distinct text snapshots. OCR and fixes are heuristic; verify them against the actual code.","good");
 }
 async function startCapture(){
  if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){status("gl-live-note","Screen sharing is not supported. Use a recent desktop browser over HTTPS, or paste code below.","error");return;}
@@ -66,17 +76,19 @@ async function startCapture(){
   stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:5},audio:false});
   video.srcObject=stream;video.style.display="block";await video.play();
   $("gl-start").disabled=true;$("gl-stop").disabled=false;$("gl-scan-now").disabled=false;
-  $("gl-status").textContent="Sharing · local scan";
-  status("gl-live-note","Screen sharing is active. Local OCR runs about every 12 seconds, even when you switch to another tab or app, as long as the browser keeps this page alive.","good");
+  sessionFrames=[];lastFrameText="";sessionStartedAt=new Date();
+  $("gl-status").textContent="Sharing · collecting session";
+  const count=$("gl-session-count");if(count)count.textContent="Session started; collecting snapshots…";
+  status("gl-live-note","Screen sharing is active. Text is collected locally every few seconds and reviewed together after you stop. Scroll through the code/error states you want included.","good");
   stream.getVideoTracks()[0].addEventListener("ended",()=>stopCapture("Browser screen sharing ended."));
-  await scanFrame();timer=setInterval(scanFrame,12000);
+  await scanFrame();timer=setInterval(scanFrame,5000);
  }catch(e){stream=null;status("gl-live-note",e.name==="NotAllowedError"||e.name==="AbortError"?"Sharing was cancelled or permission denied. Nothing is captured.":(e.message||"Could not start sharing."),"error");}
 }
 if($("gl-start"))$("gl-start").addEventListener("click",startCapture);
 if($("gl-stop"))$("gl-stop").addEventListener("click",()=>stopCapture());
 if($("gl-scan-now"))$("gl-scan-now").addEventListener("click",scanFrame);
 if($("gl-paste-scan"))$("gl-paste-scan").addEventListener("click",()=>showFindings("gl-results",$("gl-code").value));
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&stream)scanFrame();else if(document.hidden&&stream)status("gl-live-note","Screen sharing remains active while this tab is hidden. The browser sharing indicator stays visible; use Stop scanning to end it.");});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&stream)scanFrame();else if(document.hidden&&stream)status("gl-live-note","Screen sharing remains active; background OCR may be throttled by your browser. The browser sharing indicator stays visible.");});
 window.addEventListener("pagehide",()=>stopCapture("Page closed; screen sharing stopped."));
 document.addEventListener("click",e=>{const b=e.target.closest(".gl-copy");if(!b)return;const v=b.getAttribute("data-copy")||"";if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(v).then(()=>{const old=b.textContent;b.textContent="Copied";setTimeout(()=>b.textContent=old,1200);}).catch(()=>window.prompt("Copy example fix:",v));else window.prompt("Copy example fix:",v);});
 
@@ -132,25 +144,26 @@ function projectReport(files){
  if(!suggestions.length)suggestions.push({title:"Validate the main user journeys",why:"No major pattern from this lightweight scan stood out.",action:"Run tests, inspect logs, update dependencies, and test key flows end to end.","impact":"Medium"});
  return{files:files.length,source:source,tests:tests,ci:ci,todos:todos,catches:catches,secrets:secretMatches,large:large.length,risk:risk,suggestions:suggestions};
 }
-function renderReport(target,report,mode,goal){
- let suggestions=report.suggestions.slice().sort((a,b)=>({Critical:0,High:1,Medium:2,Low:3}[a.impact]||3)-({Critical:0,High:1,Medium:2,Low:3}[b.impact]||3));
- if(goal==="security")suggestions.sort((a,b)=>Number(/credential|injection|execution/i.test(b.title))-Number(/credential|injection|execution/i.test(a.title)));
- if(goal==="reliability")suggestions.sort((a,b)=>Number(/test|error|checks|TODO/i.test(b.title))-Number(/test|error|checks|TODO/i.test(a.title)));
- if(goal==="scale")suggestions.sort((a,b)=>Number(/oversized|test|checks/i.test(b.title))-Number(/oversized|test|checks/i.test(a.title)));
- $(target).innerHTML='<div class="panel"><h3>'+(mode==="time"?"Forecast snapshot":"Project snapshot")+'</h3><div class="stat"><div class="stat-head"><span>Heuristic maintenance-risk indicator</span><span class="tag orange">Not a probability</span></div><strong>'+report.risk+'/100</strong><div class="progress"><span style="width:'+report.risk+'%"></span></div></div><p class="muted" style="font-size:12px">Files: '+report.files+' · Source files: '+report.source+' · Test/spec files: '+report.tests+' · CI workflows: '+report.ci+' · TODO markers: '+report.todos+' · Large files: '+report.large+'</p><p class="small-note">This is a rule-based indicator, not a statistically validated prediction of bugs, users, revenue, or future outcomes.</p></div><div class="panel"><h3>What may happen as it grows</h3><p style="font-size:13px">Without automated checks, clear error handling, and safe configuration, changes may become slower to review and regressions harder to spot. This scan cannot predict when a failure will happen.</p><p class="muted" style="font-size:12px">Security matches are clues to verify, not proof of a vulnerability.</p></div><div class="panel" style="grid-column:1/-1"><h3>Prioritized suggestions</h3>'+suggestions.map((s,i)=>'<div class="mission-row"><div class="mission-symbol">'+(s.impact==="Critical"?"🛡️":s.impact==="High"?"⚠️":"🧩")+'</div><div><strong>'+(i+1)+'. '+esc(s.title)+'</strong><small style="display:block;margin-top:5px">'+esc(s.why)+'</small><p class="muted" style="font-size:12px;margin:7px 0 0"><b>Next step:</b> '+esc(s.action)+'</p></div><span class="tag">'+esc(s.impact)+'</span></div>').join("")+'</div>';
+function money(n){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0,notation:Math.abs(n)>=1e6?"compact":"standard"}).format(Number.isFinite(n)?n:0);}
+function renderBusiness(report){
+ const val=id=>Math.max(0,Number($(id).value)||0),model=$("adv-business").value,price=val("adv-price"),costs=val("adv-costs"),start=val("adv-users"),conv=Math.min(100,val("adv-conversion"))/100,growth=Math.max(-100,Math.min(300,Number($("adv-growth").value)||0))/100,multiple=Math.min(50,val("adv-multiple")),audience=esc($("adv-audience").value.trim()||"your target customers");
+ const cases=[{name:"Conservative",g:Math.max(-.05,growth*.35),c:Math.max(.002,conv*.45),m:Math.max(1,multiple*.55)},{name:"Base case",g:growth,c:Math.max(.001,conv),m:multiple},{name:"Optimistic",g:Math.min(1.5,Math.max(.02,growth*1.7)),c:Math.min(.25,Math.max(.005,conv*1.8)),m:Math.min(15,Math.max(2,multiple*1.35))}];
+ const calc=x=>{const users=Math.max(0,Math.round(start*Math.pow(1+x.g,12))),paying=Math.round(users*x.c),rev=model==="ads"?users*.004*12:model==="oneoff"?users*x.c*price*.18*12:model==="marketplace"?paying*price*.12*12:paying*price*12,profit=rev-costs*12;return {...x,users,paying,rev,profit,valuation:Math.max(0,rev*x.m)};};
+ const results=cases.map(calc),base=results[1],modelName={subscription:"Subscription / SaaS",freemium:"Freemium",marketplace:"Marketplace take-rate",ads:"Advertising",oneoff:"One-time purchase"}[model];
+ const features=[];if(!report.tests)features.push(["Add automated tests","Catch regressions before release and reduce trust-damaging bugs."]);if(!report.docs)features.push(["Improve onboarding","Add a quick-start flow, sample project, and first-success checklist."]);features.push(["Improve retention before buying growth","Track 4-week retention and cohort activity before spending heavily on acquisition."]);if(model==="subscription"||model==="freemium")features.push(["Build a value-based premium tier","Test paid features that solve a recurring problem; do not add a paywall before users experience value."]);features.push(["Create a distribution loop","Add sharing, collaboration, integrations, or templates only when they match real user needs."]);if(!report.ci)features.push(["Automate release checks","Add CI tests, linting, and build checks to reduce production regressions."]);if(report.secrets)features.push(["Protect customer trust","Verify possible credentials privately and rotate any real exposed secrets."]);
+ $("adv-results").innerHTML='<div class="panel" style="grid-column:1/-1"><h3>12-month base-case snapshot</h3><p class="muted" style="font-size:13px">Business model: '+modelName+' · Target: '+audience+'. Project evidence: '+report.files+' readable files, '+report.source+' source files, '+report.tests+' test/spec files, '+report.ci+' CI workflows. Code does not prove market demand or product-market fit.</p><div class="grid stats"><div class="stat"><div class="stat-head">Estimated active users</div><strong>'+base.users.toLocaleString()+'</strong><span class="small-note">Month 12 scenario</span></div><div class="stat"><div class="stat-head">Monthly revenue run-rate</div><strong>'+money(base.rev/12)+'</strong><span class="small-note">At month 12 assumptions</span></div><div class="stat"><div class="stat-head">Annual operating profit</div><strong>'+money(base.profit)+'</strong><span class="small-note">Before tax and founder pay</span></div><div class="stat"><div class="stat-head">Valuation proxy</div><strong>'+money(base.valuation)+'</strong><span class="small-note">Annual revenue × multiple</span></div></div><p class="small-note">This is not a market cap. A private app has no public market capitalization; this is only an illustrative valuation proxy based on a user-entered revenue multiple.</p></div><div class="panel" style="grid-column:1/-1"><h3>Scenario comparison</h3><p class="muted" style="font-size:12px">Assumptions: '+start.toLocaleString()+' starting active users · '+(growth*100).toFixed(1)+'% monthly growth · '+(conv*100).toFixed(1)+'% paid conversion · '+money(price)+' price · '+money(costs)+' monthly costs · '+multiple+'× revenue multiple.</p><div class="grid learning-grid">'+results.map(x=>'<div class="lesson"><span class="tag">'+x.name+'</span><h3>'+x.users.toLocaleString()+' users</h3><p>'+x.paying.toLocaleString()+' estimated paying users</p><div class="lesson-bottom"><span>Annual revenue</span><strong>'+money(x.rev)+'</strong></div><div class="lesson-bottom"><span>Annual profit</span><strong>'+money(x.profit)+'</strong></div><div class="lesson-bottom"><span>Valuation proxy</span><strong>'+money(x.valuation)+'</strong></div></div>').join("")+'</div><p class="small-note">Scenario math is not a validated forecast. Churn, acquisition costs, taxes, refunds, payment fees, market size, competition, and infrastructure costs can materially change results.</p></div><div class="panel" style="grid-column:1/-1"><h3>Features to test for better growth and earnings</h3>'+features.map((f,i)=>'<div class="mission-row"><div class="mission-symbol">'+(i+1)+'</div><div><strong>'+esc(f[0])+'</strong><small style="display:block;margin-top:4px">'+esc(f[1])+'</small></div></div>').join("")+'</div><div class="panel" style="grid-column:1/-1"><h3>Replace assumptions with real data</h3><p class="muted" style="font-size:13px">Track weekly active users, activation, 4-week retention, paid conversion, churn, customer acquisition cost, lifetime value, gross margin, and support burden. Re-run this simulation as real evidence arrives.</p></div>';
 }
-async function runAnalysis(prefix,mode){
- const btn=$(prefix+"-analyze");btn.disabled=true;btn.dataset.old=btn.textContent;btn.textContent="Inspecting files…";
- $(prefix+"-results").innerHTML="";status(prefix+"-status","Reading text files. Uploaded code will not be executed.");
- try{const files=await getFiles(prefix),report=projectReport(files);renderReport(prefix+"-results",report,mode,prefix==="adv"?$("adv-goal").value:"");status(prefix+"-status","Done. Inspected "+files.length+" readable text files; unsupported or large files may be skipped.","good");}
- catch(e){status(prefix+"-status",e.message||"Could not analyze project.","error");}
- finally{btn.disabled=false;btn.textContent=btn.dataset.old||"Analyze project";delete btn.dataset.old;}
+async function runAdventure(){
+ const btn=$("adv-analyze");btn.disabled=true;btn.dataset.old=btn.textContent;btn.textContent="Inspecting project…";$("adv-results").innerHTML="";status("adv-status","Reading source files and preparing business scenarios. Uploaded code will not be executed.");
+ try{const files=await getFiles("adv"),report=projectReport(files);renderBusiness(report);status("adv-status","Simulation ready. Adjust assumptions and run again to compare scenarios.","good");}
+ catch(e){status("adv-status",e.message||"Could not analyze project.","error");}
+ finally{btn.disabled=false;btn.textContent=btn.dataset.old||"Simulate business model";delete btn.dataset.old;}
 }
-if($("tt-analyze"))$("tt-analyze").addEventListener("click",()=>runAnalysis("tt","time"));
-if($("adv-analyze"))$("adv-analyze").addEventListener("click",()=>runAnalysis("adv","adventure"));
-if($("tt-clear"))$("tt-clear").addEventListener("click",()=>{$("tt-results").innerHTML="";status("tt-status","Results cleared.");});
+
+if($("adv-analyze"))$("adv-analyze").addEventListener("click",runAdventure);
+
 if($("adv-clear"))$("adv-clear").addEventListener("click",()=>{$("adv-results").innerHTML="";status("adv-status","Results cleared.");});
-const labels={ghostlab:"Ghost Lab",timetravel:"Time Travel",adventure:"Adventure"};
+const labels={ghostlab:"Ghost Lab",adventure:"Adventure"};
 const nav=document.querySelector(".nav[aria-label='Developer tools']");
 if(nav){nav.addEventListener("click",e=>{const b=e.target.closest("[data-page]");if(b&&labels[b.dataset.page]){const c=$("crumbName");if(c)c.textContent=labels[b.dataset.page];}});}
 })();
