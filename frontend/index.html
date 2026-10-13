@@ -169,7 +169,7 @@ Output: 8</pre><h4>CONCEPTS</h4><div id="wsConcepts" class="btn-row"><span class
 <div class="panel"><div class="panel-title"><h3>🛠️ Potential issues</h3><span class="tag orange" id="cqIssuesTag">Not scanned</span></div><p class="explain-p muted">Heuristic review only. Findings are clues to inspect, not proof of a vulnerability or a bug.</p><div id="cqIssuesBody" class="cq-body"><p class="explain-p muted" style="font-size:14px">Import a repository and scan it to list potential issues with file paths and line numbers.</p></div><div class="lab-actions"><button class="soft-btn" id="cqScanBtn">Scan repository for issues</button></div></div>
 <div class="panel"><div class="panel-title"><h3>🎓 Learn this codebase</h3><span class="tag green" id="cqQuizTag">Quiz mode</span></div><p class="explain-p muted">Questions are built from the files you loaded. Read the code, make a prediction, then check your answer.</p><div class="cq-box cq-quiz-q" id="cqQuizQuestion">Import a repository, select a source file, then generate your first question.</div><div class="field" style="margin-top:12px"><label for="cqQuizAnswer">Your answer</label><textarea id="cqQuizAnswer" placeholder="Explain what the code does, or answer the question..."></textarea></div><div class="lab-actions"><button class="primary-btn" id="cqNewQ">New question</button><button class="soft-btn" id="cqCheckA">Check answer</button></div><div class="cq-box" id="cqQuizFeedback" hidden style="margin-top:12px"></div><div class="small-note" id="cqQuizScore"></div></div>
 </div>
-<div class="panel cq-demo" style="margin-top:16px" id="cqDemoPanel"><div class="panel-title"><h3>▶ Live simulation</h3><span class="tag purple">Run imported project</span></div><p class="explain-p muted">Open the built-in task-tracker sample in StackBlitz, or launch an imported public GitHub repository.</p><div class="lab-actions"><button class="primary-btn" id="cqStackblitz">Run sample preview</button><button class="soft-btn" id="cqPreviewBtn">Preview selected HTML file</button><button class="soft-btn" id="cqOpenGithub" disabled>Open on GitHub ↗</button></div><div class="small-note" id="cqDemoNote"></div><div class="small-note" id="cqPreviewStatus"></div><div id="cqStackblitzWrap" hidden><div class="lab-actions"><button class="ghost-btn" id="cqCloseStackblitz">Close StackBlitz demo</button></div><div id="cqStackblitzFrame" style="height:640px;overflow:hidden;border-radius:12px"></div></div><div id="cqPreviewWrap" hidden><div class="lab-actions"><button class="ghost-btn" id="cqClosePreview">Close preview</button></div><iframe id="cqPreviewFrame" title="Sandboxed preview of the selected HTML file" sandbox="allow-scripts allow-forms allow-modals allow-popups" referrerpolicy="no-referrer"></iframe></div></div>
+<div class="panel cq-demo" style="margin-top:16px" id="cqDemoPanel"><div class="panel-title"><h3>▶ Live simulation</h3><span class="tag purple">Run imported project</span></div><p class="explain-p muted">Open the built-in task-tracker sample in StackBlitz, or launch an imported public GitHub repository.</p><div class="lab-actions"><button class="primary-btn" id="cqStackblitz">Run sample preview</button><button class="soft-btn" id="cqPreviewBtn">Preview selected HTML file</button><button class="soft-btn" id="cqOpenGithub" disabled>Open on GitHub ↗</button></div><div class="small-note" id="cqDemoNote"></div><div class="small-note" id="cqPreviewStatus"></div><div id="cqStackblitzWrap" hidden><div class="lab-actions"><button class="ghost-btn" id="cqCloseStackblitz">Close preview</button></div><div id="cqStackblitzFrame" style="height:640px;overflow:hidden;border-radius:12px"></div></div><div id="cqPreviewWrap" hidden><div class="lab-actions"><button class="ghost-btn" id="cqClosePreview">Close preview</button></div><iframe id="cqPreviewFrame" title="Sandboxed preview of the imported project" sandbox="allow-scripts allow-forms allow-modals allow-popups" referrerpolicy="no-referrer"></iframe></div></div>
 </section>
 <section class="page" id="page-learning"><div class="page-heading"><div><div class="eyebrow">YOUR PERSONAL ROADMAP</div><h1>Learning path ◉</h1><p>Build strong foundations in the right order. Revisit any unlocked lesson whenever you need.</p></div><span class="tag purple">3 of 9 started</span></div><div class="grid learning-grid" id="learningGrid"></div></section>
 <section class="page" id="page-analytics"><div class="page-heading"><div><div class="eyebrow">YOUR GROWTH, VISUALIZED</div><h1>My progress ▥</h1><p>Review your real recorded practice attempts and completions. Data stays in this browser.</p></div><span class="tag">Local analytics</span></div><div class="grid stats"><div class="stat"><div class="stat-head">Challenges attempted<span class="stat-icon">⌁</span></div><strong id="analyticsAttempt">0</strong><div class="muted" style="font-size:11px">On this browser</div></div><div class="stat"><div class="stat-head">Challenges completed<span class="stat-icon">✓</span></div><strong id="analyticsDone">0</strong><div class="muted" style="font-size:11px">Saved on this browser</div></div><div class="stat"><div class="stat-head">Hint reveals<span class="stat-icon">✧</span></div><strong id="analyticsHints">0</strong><div class="muted" style="font-size:11px">Saved on this browser</div></div><div class="stat"><div class="stat-head">Total XP<span class="stat-icon">⚡</span></div><strong id="analyticsXP">0</strong><div class="muted" style="font-size:11px">Local practice rewards, not server verified</div></div></div><div class="grid two-col"><div class="panel"><div class="panel-title"><h3>Mission concept progress</h3><span class="tag">From completions</span></div><div id="analyticsSkills"></div></div><div class="panel"><div class="panel-title"><h3>Mistake memory</h3><span class="tag">Local history</span></div><div class="small-note">Attempt outcomes and error categories saved on this browser only.</div></div></div></section>
@@ -1148,7 +1148,7 @@ async function importGitHubRepo(){
   }
   activeFiles=files;githubRepoMeta=meta;cqOnRepoLoaded();
   $("fileSearch").value="";$("fileCountTag").textContent=`GitHub · ${entries.length} files`;
-  $("architectureNote").textContent=`Read-only preview of ${meta.full_name} (loaded via ${source}). Source is fetched when selected. The repository overview traces recognizable imports from loaded entry files; this map remains a sample diagram.`;
+  $("architectureNote").textContent=`Read-only preview of ${meta.full_name} (loaded via ${source}). Source is fetched when selected. Repository intelligence reads eligible files across the imported repository; this architecture graphic remains illustrative.`;
   status.className="repo-status good";status.textContent=`Loaded ${meta.full_name} (${meta.default_branch}) via ${source}. ${entries.length} text-like files available. Select a file to read and understand it.`;
   const extensions=entries.map(x=>(x.path.split(".").pop()||"").toLowerCase());
   const languageMap={py:"Python",js:"JavaScript",jsx:"React",ts:"TypeScript",tsx:"React/TS",html:"HTML",css:"CSS",md:"Markdown",json:"JSON",go:"Go",rs:"Rust",java:"Java",cpp:"C++",c:"C",rb:"Ruby",php:"PHP",sql:"SQL",yml:"YAML",yaml:"YAML"};
@@ -2099,61 +2099,6 @@ function cqDemoSetup(){
 }
 function cqRepoUrlParts(){const p=String(githubRepoMeta.full_name).split("/");return {owner:encodeURIComponent(p[0]),repo:encodeURIComponent(p[1]||"")}}
 function cqOpen(url){const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener noreferrer";document.body.appendChild(a);a.click();a.remove()}
-let cqStackblitzSdkPromise=null,cqStackblitzVm=null;
-function cqLoadStackblitzSdk(){
- if(window.StackBlitzSDK)return Promise.resolve(window.StackBlitzSDK);
- if(!cqStackblitzSdkPromise)cqStackblitzSdkPromise=new Promise((resolve,reject)=>{
-  const script=document.createElement("script");
-  script.src="https://unpkg.com/@stackblitz/sdk@1/bundles/sdk.umd.js";
-  script.onload=()=>window.StackBlitzSDK?resolve(window.StackBlitzSDK):reject(new Error("StackBlitz SDK did not initialize."));
-  script.onerror=()=>reject(new Error("Could not load the StackBlitz SDK."));
-  document.head.append(script);
- });
- return cqStackblitzSdkPromise;
-}
-function cqSampleProjectFiles(){
- const files={};
- for(const [path,file] of Object.entries(sampleFiles)){
-  if(typeof file.content==="string")files[path]=file.content;
- }
- files["package.json"]=JSON.stringify({name:"codequest-task-tracker",version:"1.0.0",type:"module"},null,2);
- return files;
-}
-async function cqOpenStackblitz(){
- const button=$("cqStackblitz"),note=$("cqDemoNote");
- if(githubRepoMeta&&githubRepoMeta.full_name){
-  const paths=Object.keys(activeFiles);
-  const entry=paths.find(p=>(/(^|\/)index\.html?$/i).test(p))||paths.find(p=>/\.html?$/i.test(p));
-  if(!entry){note.textContent="No HTML entry point found. This project may require a framework build/server; native preview currently supports static HTML/CSS/JavaScript.";return}
-  await showFile(entry);
-  if(!cqExp.content){note.textContent="Could not load "+entry+" for preview.";return}
-  await cqPreviewHtml();
-  note.textContent="Preview requested for "+entry+". Check preview status for missing assets or unsupported imports.";
-  return;
- }
- button.disabled=true;note.textContent="Loading the editable task-tracker project…";
- try{
-  const sdk=await cqLoadStackblitzSdk();
-  const files=cqSampleProjectFiles();
-  await cqCloseStackblitz();
-  $("cqStackblitzWrap").hidden=false;
-  cqStackblitzVm=await sdk.embedProject("cqStackblitzFrame",{
-   title:"CodeQuest Task Tracker",
-   description:"A small, working task tracker built with browser JavaScript modules.",
-   template:"javascript",
-   files
-  },{height:640,view:"default",theme:"dark",openFile:"index.html"});
-  note.textContent="The task-tracker files are open in an editable StackBlitz project. Changes in StackBlitz are separate from this sample.";
- }catch(error){
-  $("cqStackblitzWrap").hidden=true;
-  note.textContent="Could not open StackBlitz: "+(error.message||String(error));
- }finally{button.disabled=false}
-}
-async function cqCloseStackblitz(){
- const frame=$("cqStackblitzFrame");if(frame)frame.replaceChildren();
- const wrap=$("cqStackblitzWrap");if(wrap)wrap.hidden=true;
- $("cqPreviewFrame").srcdoc="";$("cqPreviewWrap").hidden=true;
-}
 async function cqReplaceAsync(str,re,fn){
  const matches=[...str.matchAll(re)];if(!matches.length)return str;
  const parts=await Promise.all(matches.map(m=>fn(m)));
