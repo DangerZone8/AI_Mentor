@@ -83,16 +83,16 @@ document.addEventListener("click",e=>{const b=e.target.closest(".gl-copy");if(!b
 // Project ZIP/public GitHub analysis: text-only inspection; never execute code.
 let zipPromise=null;
 function loadZip(){if(window.JSZip)return Promise.resolve(window.JSZip);if(!zipPromise)zipPromise=new Promise((resolve,reject)=>{const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js";s.onload=()=>window.JSZip?resolve(window.JSZip):reject(Error("ZIP reader did not initialize."));s.onerror=()=>reject(Error("Could not load ZIP reader; check your connection."));document.head.appendChild(s);});return zipPromise;}
-const skip=/(^|\\/)(node_modules|vendor|\\.git|dist|build|coverage|\\.next|venv|__pycache__)(\\/|$)/i;
-const ext=/\\.(js|jsx|ts|tsx|mjs|cjs|py|java|go|rs|rb|php|cs|cpp|c|h|html|css|scss|json|ya?ml|toml|md|sql|sh|txt)$/i;
+const skip=/(^|\/)(node_modules|vendor|\.git|dist|build|coverage|\.next|venv|__pycache__)(\/|$)/i;
+const ext=/\.(js|jsx|ts|tsx|mjs|cjs|py|java|go|rs|rb|php|cs|cpp|c|h|html|css|scss|json|ya?ml|toml|md|sql|sh|txt)$/i;
 async function zipFiles(file){
  if(!file)throw Error("Choose a ZIP file or enter a public GitHub URL.");
  if(file.size>25*1024*1024)throw Error("ZIP files must be 25 MB or smaller.");
  const Z=await loadZip(),archive=await Z.loadAsync(file),files=[];
- for(const path in archive.files){const entry=archive.files[path];if(entry.dir||skip.test(path)||!ext.test(path)||files.length>=160)continue;const size=entry._data&&entry._data.uncompressedSize||0;if(size>180000)continue;const body=await entry.async("string");if(!body.includes("\\u0000"))files.push({path,content:body});}
+ for(const path in archive.files){const entry=archive.files[path];if(entry.dir||skip.test(path)||!ext.test(path)||files.length>=160)continue;const size=entry._data&&entry._data.uncompressedSize||0;if(size>180000)continue;const body=await entry.async("string");if(!body.includes("\u0000"))files.push({path,content:body});}
  return files;
 }
-function parseRepo(raw){let u;try{u=new URL(raw);}catch{throw Error("Enter a valid public GitHub repository URL.");}if(u.protocol!=="https:"||u.hostname!=="github.com")throw Error("URL analysis currently supports public GitHub repositories. Other sites may block browser access.");const p=u.pathname.split("/").filter(Boolean);if(p.length<2)throw Error("Use a link like https://github.com/owner/repo.");return{owner:p[0],repo:p[1].replace(/\\.git$/,""),branch:p[2]==="tree"?p[3]:""};}
+function parseRepo(raw){let u;try{u=new URL(raw);}catch{throw Error("Enter a valid public GitHub repository URL.");}if(u.protocol!=="https:"||u.hostname!=="github.com")throw Error("URL analysis currently supports public GitHub repositories. Other sites may block browser access.");const p=u.pathname.split("/").filter(Boolean);if(p.length<2)throw Error("Use a link like https://github.com/owner/repo.");return{owner:p[0],repo:p[1].replace(/\.git$/,""),branch:p[2]==="tree"?p[3]:""};}
 async function githubFiles(raw){
  const r=parseRepo(raw),base="https://api.github.com/repos/"+encodeURIComponent(r.owner)+"/"+encodeURIComponent(r.repo),headers={Accept:"application/vnd.github+json"};
  const mr=await fetch(base,{headers});if(!mr.ok)throw Error(mr.status===404?"Repository not found or not public.":"GitHub request failed (HTTP "+mr.status+").");
@@ -100,22 +100,22 @@ async function githubFiles(raw){
  if(!tr.ok)throw Error("Could not read repository tree (HTTP "+tr.status+"). Try its default URL or upload ZIP.");
  const tree=await tr.json(),files=[];
  for(const item of tree.tree||[]){if(item.type!=="blob"||skip.test(item.path)||!ext.test(item.path)||files.length>=100||(item.size||0)>180000)continue;
-  try{const url="https://raw.githubusercontent.com/"+encodeURIComponent(r.owner)+"/"+encodeURIComponent(r.repo)+"/"+branch.split("/").map(encodeURIComponent).join("/")+"/"+item.path.split("/").map(encodeURIComponent).join("/");const res=await fetch(url);if(res.ok){const body=await res.text();if(!body.includes("\\u0000"))files.push({path:item.path,content:body});}}catch(_){}
+  try{const url="https://raw.githubusercontent.com/"+encodeURIComponent(r.owner)+"/"+encodeURIComponent(r.repo)+"/"+branch.split("/").map(encodeURIComponent).join("/")+"/"+item.path.split("/").map(encodeURIComponent).join("/");const res=await fetch(url);if(res.ok){const body=await res.text();if(!body.includes("\u0000"))files.push({path:item.path,content:body});}}catch(_){}
  }
  if(!files.length)throw Error("No readable source files found. Check the public repository or upload its ZIP.");
  return files;
 }
 async function getFiles(prefix){const url=$(prefix+"-source").value.trim();return url?githubFiles(url):zipFiles($(prefix+"-zip").files[0]);}
 function projectReport(files){
- const paths=files.map(f=>f.path.toLowerCase()),all=files.map(f=>f.content).join("\\n"),count=r=>(all.match(r)||[]).length;
- const tests=paths.filter(p=>/(^|\\/)(__tests__|tests?|spec)\\/|(^|[._-])(test|spec)\\.[^.]+$/.test(p)).length;
+ const paths=files.map(f=>f.path.toLowerCase()),all=files.map(f=>f.content).join("\n"),count=r=>(all.match(r)||[]).length;
+ const tests=paths.filter(p=>/(^|\/)(__tests__|tests?|spec)\/|(^|[._-])(test|spec)\.[^.]+$/.test(p)).length;
  const ci=paths.filter(p=>p.includes(".github/workflows/")||p.includes(".gitlab-ci")||p.includes("jenkinsfile")||p.includes("azure-pipelines")).length;
- const docs=paths.some(p=>/(^|\\/)(readme|contributing|security|architecture)(\\.|$)|(^|\\/)docs\\//.test(p));
- const manifest=paths.some(p=>/(^|\\/)(package\\.json|requirements\\.txt|pyproject\\.toml|go\\.mod|cargo\\.toml|pom\\.xml)$/.test(p));
- const todos=count(/\\b(TODO|FIXME|HACK|XXX)\\b/g),catches=count(/catch\\s*\\([^)]*\\)\\s*\\{\\s*\\}|except\\s*:\\s*(?:pass)?/g),evals=count(/\\beval\\s*\\(/g),html=count(/\\.innerHTML\\s*=/g);
- const secretMatches=files.filter(f=>!/example|sample|test|fixture/i.test(f.path)).reduce((n,f)=>n+(f.content.match(/(?:sk-[A-Za-z0-9_-]{20,}|(?:api[_-]?key|client_secret|service_role)\\s*[:=]\\s*["'][^"'\\n]{12,}["'])/gi)||[]).length,0);
- const large=files.filter(f=>f.content.split(/\\r?\\n/).length>500);
- const source=files.filter(f=>/\\.(js|jsx|ts|tsx|py|java|go|rs|rb|php|cs|cpp|c)$/i.test(f.path)).length;
+ const docs=paths.some(p=>/(^|\/)(readme|contributing|security|architecture)(\.|$)|(^|\/)docs\//.test(p));
+ const manifest=paths.some(p=>/(^|\/)(package\.json|requirements\.txt|pyproject\.toml|go\.mod|cargo\.toml|pom\.xml)$/.test(p));
+ const todos=count(/\b(TODO|FIXME|HACK|XXX)\b/g),catches=count(/catch\s*\([^)]*\)\s*\{\s*\}|except\s*:\s*(?:pass)?/g),evals=count(/\beval\s*\(/g),html=count(/\.innerHTML\s*=/g);
+ const secretMatches=files.filter(f=>!/example|sample|test|fixture/i.test(f.path)).reduce((n,f)=>n+(f.content.match(/(?:sk-[A-Za-z0-9_-]{20,}|(?:api[_-]?key|client_secret|service_role)\s*[:=]\s*["'][^"'\n]{12,}["'])/gi)||[]).length,0);
+ const large=files.filter(f=>f.content.split(/\r?\n/).length>500);
+ const source=files.filter(f=>/\.(js|jsx|ts|tsx|py|java|go|rs|rb|php|cs|cpp|c)$/i.test(f.path)).length;
  const risk=Math.min(100,Math.round((tests?0:22)+(ci?0:10)+(manifest?0:8)+Math.min(18,todos*2)+Math.min(18,catches*6)+Math.min(18,secretMatches*12)+Math.min(12,large.length*3)+Math.min(8,evals*4)+(source?0:12)));
  const suggestions=[];
  function add(ok,title,why,action,impact){if(ok)suggestions.push({title,why,action,impact});}
