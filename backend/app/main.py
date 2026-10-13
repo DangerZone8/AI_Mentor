@@ -357,8 +357,12 @@ def readiness() -> dict[str, object]:
             os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_PUBLISHABLE_KEY")
         ),
         "capabilities": {
-            "authentication": False,
-            "database": False,
+            "authentication": bool(
+                os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_PUBLISHABLE_KEY")
+            ),
+            "database": bool(
+                os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_PUBLISHABLE_KEY")
+            ),
             "isolated_python_runner": bool(
                 os.getenv("RUNNER_API_URL") and os.getenv("RUNNER_API_KEY")
             ),
