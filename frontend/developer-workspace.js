@@ -59,7 +59,7 @@ async function scanFrame(analyzeNow=false){
   const T=await loadOCR(),result=await T.recognize(canvas,"eng"),text=(result&&result.data?result.data.text:"").trim();
   if(text){sessionFrames.push({time:new Date().toLocaleTimeString(),text});lastFrameText=text;if(sessionFrames.length>600)sessionFrames.shift();if(analyzeNow)await askAiAboutText(text,"Current screen");}
   const count=$("gl-session-count");if(count)count.textContent=sessionFrames.length+" snapshots collected";
-  status("gl-live-note","Collecting locally: "+sessionFrames.length+" snapshots. Scroll through the relevant code; press Stop & review session when finished.","good");
+  if(!analyzeNow)status("gl-live-note","Collecting locally: "+sessionFrames.length+" snapshots. Scroll through the relevant code; press Stop & review session when finished.","good");
  }catch(e){status("gl-live-note",e.message||"Could not scan this frame.","error");}
  finally{busy=false;if(stream)timer=setTimeout(scanFrame,2500);}
 }
@@ -83,7 +83,7 @@ async function askAiAboutText(text,label){
  }catch(error){status("gl-live-note",error.message||"AI analysis failed. Check sign-in and backend configuration.","error");}
 }
 async function reviewSession(){
- const text=sessionFrames.map((f,i)=>"[Snapshot "+(i+1)+" · "+f.time+"]\\n"+f.text).join("\\n\\n");
+ const text=sessionFrames.map((f,i)=>"[Snapshot "+(i+1)+" · "+f.time+"]\n"+f.text).join("\n\n");
  if(!text.trim()){status("gl-live-note","Sharing stopped, but no readable code was captured. Try a larger font or paste code below.","error");return;}
  showFindings("gl-results",text);
  const count=$("gl-session-count");if(count)count.textContent=sessionFrames.length+" snapshots reviewed · "+text.length.toLocaleString()+" characters";
