@@ -1075,9 +1075,25 @@ $("runCode").addEventListener("click",()=>executeMission(false));$("submitCode")
 window.simulatedRun = executeMission;
 window.executeMission = executeMission;
 $("getHint").addEventListener("click",()=>{if(hintLevel<3){let hint=currentMission.hints[hintLevel];hintLevel++;hintsUsed++;try{localStorage.setItem("cqHints",String(hintsUsed))}catch(e){toast("Hint count could not be saved in this browser")} $("hintCount").textContent=`(${hintLevel}/3)`;$("mentorMessage").innerHTML=`<b>Hint ${hintLevel} of 3</b>${hint}`;updateStats()}else toast("You've revealed all three hints. Try explaining the logic in your own words!")});
-$("explainError").addEventListener("click",()=>{$("mentorMessage").innerHTML="<b>How to inspect an error</b>Read the last line of a traceback first. It usually names the error type. Then look at the file and line number mentioned, check nearby punctuation and indentation, and make one change at a time. No real traceback has been collected here."});
-$("explainCode").addEventListener("click",()=>{$("mentorMessage").innerHTML=`<b>Explain this code</b>${currentMission.title}: ${currentMission.desc} Start by identifying the function inputs, the operations performed on them, and what the function returns. Read each line in order and try one example by hand.`});
-$("nextStep").addEventListener("click",()=>{$("mentorMessage").innerHTML="<b>Your next step</b>1. Read the example. 2. Trace each variable with a small input. 3. Check boundary cases. 4. Run a real test in a configured Python sandbox when available."});
+function askAiMentorFromFeature(prompt){
+ if(aiMentorBusy){toast("The AI Mentor is already answering a question.");return}
+ go("mentor");
+ const input=$("aiMentorInput");
+ input.value=prompt;
+ void sendAiMentorQuestion({preventDefault(){}});
+}
+$("explainError").addEventListener("click",()=>{
+ const code=$("codeEditor").value||"",output=$("consoleOutput").textContent||"No runner output is available yet.";
+ askAiMentorFromFeature("Debug the current CodeQuest mission. Identify the most likely cause from the actual output, explain why, and suggest a minimal fix plus a regression test. Do not claim to have executed the code unless the output below proves it.\nMission: "+currentMission.title+"\nLanguage: "+currentLanguage+"\nRunner output:\n"+output.slice(0,6000)+"\nCode:\n```"+currentLanguage+"\n"+code.slice(0,10000)+"\n```");
+});
+$("explainCode").addEventListener("click",()=>{
+ const code=$("codeEditor").value||"";
+ askAiMentorFromFeature("Explain this code line by line in beginner-friendly language. Describe inputs, outputs, control flow, complexity where relevant, and one edge case.\nMission: "+currentMission.title+"\nLanguage: "+currentLanguage+"\nCode:\n```"+currentLanguage+"\n"+code.slice(0,10000)+"\n```");
+});
+$("nextStep").addEventListener("click",()=>{
+ const code=$("codeEditor").value||"",output=$("consoleOutput").textContent||"No runner output is available yet.";
+ askAiMentorFromFeature("Give me the next 3 concrete steps to solve or improve this mission. Prefer hints before a full solution. Use the current code and output to personalize the advice.\nMission: "+currentMission.title+"\nDescription: "+currentMission.desc+"\nLanguage: "+currentLanguage+"\nOutput:\n"+output.slice(0,4000)+"\nCode:\n```"+currentLanguage+"\n"+code.slice(0,8000)+"\n```");
+});
 let activeFiles=sampleFiles,githubRepoMeta=null;
 function renderFiles(filter=""){
  const names=Object.keys(activeFiles).filter(n=>n.toLowerCase().includes(filter.toLowerCase()));
