@@ -51,6 +51,9 @@ $("clear").addEventListener("click", () => { $("prompt").value = ""; answer.text
 
 const indexButton = $("index");
 if (window.codeQuestDesktop && window.codeQuestDesktop.isDesktopApp) {
+  window.codeQuestDesktop.getAppConfig().then(config => {
+    if (config?.apiBase && !$("api").value.trim()) $("api").value = config.apiBase;
+  }).catch(() => {});
   indexButton.addEventListener("click", async () => {
     indexButton.disabled = true;
     $("indexStatus").textContent = "Choose a folder…";
