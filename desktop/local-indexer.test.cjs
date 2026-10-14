@@ -20,6 +20,7 @@ test("indexes supported code files and returns keyword matches", async () => {
     assert.equal(result.results.length, 1);
     assert.equal(result.results[0].path, path.join("src", "solver.js"));
     assert.match(result.results[0].excerpt, /solveBug/);
+    assert.equal(searchFiles("solver").results[0].path, path.join("src", "solver.js"));
     assert.deepEqual(searchFiles("   ").results, []);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
