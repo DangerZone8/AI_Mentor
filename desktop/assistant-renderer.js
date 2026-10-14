@@ -21,13 +21,18 @@ ask.addEventListener("click", async () => {
   }
   ask.disabled = true; status.textContent = "Thinking…"; answer.textContent = "Working…";
   try {
-    const response = await fetch(base + "/api/v1/mentor/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-      body: JSON.stringify({ messages: [{ role: "user", content: promptWithContext }] })
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(payload.detail || "Request failed (" + response.status + "). Check the API URL, sign-in token, and server configuration.");
+    let payload;
+    if (window.codeQuestDesktop?.isDesktopApp) {
+      payload = await window.codeQuestDesktop.mentorChat({ base, token, prompt: promptWithContext.slice(0, 8000) });
+    } else {
+      const response = await fetch(base + "/api/v1/mentor/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ messages: [{ role: "user", content: promptWithContext.slice(0, 8000) }] })
+      });
+      payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.detail || "Request failed (" + response.status + "). Check the API URL, sign-in token, and server configuration.");
+    }
     answer.textContent = payload.answer || "The API returned an empty answer.";
     status.textContent = "Done";
   } catch (error) {
