@@ -58,6 +58,29 @@ ipcMain.handle("codequest:choose-index-folder", async () => {
   return { canceled: false, ...await indexFolder(result.filePaths[0]) };
 });
 ipcMain.handle("codequest:search-local-files", (_event, query) => searchFiles(String(query || "").slice(0, 300)));
+ipcMain.handle("codequest:mentor-chat", async (_event, request = {}) => {
+  const base = String(request.base || "").trim().replace(/\\/+$/, "");
+  const token = String(request.token || "").trim();
+  const prompt = String(request.prompt || "").trim();
+  let parsed;
+  try { parsed = new URL(base); } catch { throw new Error("Enter a valid CodeQuest API URL."); }
+  const localHttp = parsed.protocol === "http:" && ["localhost", "127.0.0.1"].includes(parsed.hostname);
+  if (parsed.protocol !== "https:" && !localHttp) throw new Error("Use HTTPS for the API URL (HTTP is allowed only for localhost development).");
+  if (parsed.username || parsed.password) throw new Error("Do not put credentials in the API URL.");
+  if (!token) throw new Error("A current Supabase access token is required.");
+  if (!prompt || prompt.length > 8000) throw new Error("The request must contain between 1 and 8000 characters.");
+  const response = await fetch(base + "/api/v1/mentor/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+    body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),
+    signal: AbortSignal.timeout(60000)
+  });
+  const raw = await response.text();
+  let payload = {};
+  try { payload = JSON.parse(raw); } catch { /* Keep an empty payload for non-JSON errors. */ }
+  if (!response.ok) throw new Error(payload.detail || "Request failed (" + response.status + "). Check the API URL, token, and backend configuration.");
+  return { answer: payload.answer || "The API returned an empty answer." };
+});
 
 app.whenReady().then(() => {
   createMainWindow();
