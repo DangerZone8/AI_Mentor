@@ -1,4 +1,5 @@
-const { app, BrowserWindow, globalShortcut, shell, ipcMain, dialog, desktopCapturer, session } = require("electron");
+const { app, BrowserWindow, globalShortcut, shell, ipcMain, dialog, desktopCapturer, session, Menu } = require("electron");
+const { autoUpdater } = require("electron-updater");
 const { indexFolder, searchFiles } = require("./local-indexer.cjs");
 const { normalizeApiBase } = require("./api-url.cjs");
 const path = require("node:path");
@@ -6,11 +7,114 @@ const path = require("node:path");
 const APP_URL = process.env.CODEQUEST_DESKTOP_URL || "https://ai-mentor-opal.vercel.app/";
 let mainWindow;
 let assistantWindow;
+let manualUpdateCheck = false;
+let updateDialogOpen = false;
+let updateMenuItem;
+
+function showNativeDialog(options) {
+  if (mainWindow && !mainWindow.isDestroyed()) return dialog.showMessageBox(mainWindow, options);
+  return dialog.showMessageBox(options);
+}
+
+function showUpdateMessage(title, message, type = "info") {
+  return showNativeDialog({ type, title, message, buttons: ["OK"], noLink: true });
+}
+
+async function checkForUpdates(manual = false) {
+  if (!app.isPackaged) {
+    if (manual) await showUpdateMessage("Updates unavailable", "Update checks are available in an installed CodeQuest build, not while running from source.");
+    return;
+  }
+  if (manualUpdateCheck) return;
+  manualUpdateCheck = manual;
+  if (updateMenuItem) updateMenuItem.label = "Checking for Updates…";
+  try {
+    await autoUpdater.checkForUpdates();
+  } catch (error) {
+    if (manual) await showUpdateMessage("Could not check for updates", error?.message || "Check your internet connection and try again.", "error");
+    manualUpdateCheck = false;
+    if (updateMenuItem) updateMenuItem.label = "Check for Updates…";
+  }
+}
+
+function setupUpdater() {
+  if (!app.isPackaged) return;
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.allowPrerelease = false;
+  autoUpdater.on("checking-for-update", () => {
+    if (updateMenuItem) updateMenuItem.label = "Checking for Updates…";
+  });
+  autoUpdater.on("update-available", async (info) => {
+    manualUpdateCheck = false;
+    if (updateMenuItem) updateMenuItem.label = "Downloading Update…";
+    await showUpdateMessage("CodeQuest update available", "Version " + info.version + " is available. CodeQuest will download it in the background.");
+  });
+  autoUpdater.on("update-not-available", async (info) => {
+    const wasManual = manualUpdateCheck;
+    manualUpdateCheck = false;
+    if (updateMenuItem) updateMenuItem.label = "Check for Updates…";
+    if (wasManual) await showUpdateMessage("CodeQuest is up to date", "You are using the latest available version" + (info?.version ? " (" + info.version + ")" : "") + ".");
+  });
+  autoUpdater.on("download-progress", (progress) => {
+    if (updateMenuItem) updateMenuItem.label = "Downloading Update… " + Math.round(progress.percent) + "%";
+  });
+  autoUpdater.on("update-downloaded", async (info) => {
+    if (updateMenuItem) updateMenuItem.label = "Restart to Install Update";
+    if (updateDialogOpen) return;
+    updateDialogOpen = true;
+    try {
+      const result = await showNativeDialog({
+        type: "info",
+        title: "CodeQuest update ready",
+        message: "CodeQuest " + info.version + " is downloaded and ready to install.",
+        detail: "Restart CodeQuest to finish installing the update. You can also do this later.",
+        buttons: ["Restart and Install", "Later"],
+        defaultId: 0, cancelId: 1, noLink: true
+      });
+      if (result.response === 0) autoUpdater.quitAndInstall();
+    } finally {
+      updateDialogOpen = false;
+    }
+  });
+  autoUpdater.on("error", async (error) => {
+    const wasManual = manualUpdateCheck;
+    manualUpdateCheck = false;
+    if (updateMenuItem) updateMenuItem.label = "Check for Updates…";
+    if (wasManual) await showUpdateMessage("Update check failed", error?.message || "The update service could not be reached.", "error");
+  });
+  setTimeout(() => checkForUpdates(false), 10000);
+  setInterval(() => checkForUpdates(false), 6 * 60 * 60 * 1000);
+}
+
+function installAppMenu() {
+  const template = [
+    ...(process.platform === "darwin" ? [{
+      label: "CodeQuest",
+      submenu: [{ role: "about" }, { type: "separator" }, { role: "quit" }]
+    }] : []),
+    {
+      label: "Help",
+      submenu: [
+        {
+          label: "Check for Updates…",
+          click: () => checkForUpdates(true),
+          id: "check-for-updates"
+        },
+        { type: "separator" },
+        { label: "Open CodeQuest website", click: () => shell.openExternal(APP_URL) }
+      ]
+    }
+  ];
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+  updateMenuItem = menu.getMenuItemById("check-for-updates");
+}
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1440, height: 940, minWidth: 900, minHeight: 640,
-    title: "CodeQuest", backgroundColor: "#0b1020", autoHideMenuBar: true,
+    title: "CodeQuest", backgroundColor: "#0b1020", autoHideMenuBar: false,
     webPreferences: {
       contextIsolation: true, nodeIntegration: false, sandbox: true
     }
@@ -125,10 +229,6 @@ ipcMain.handle("codequest:mentor-chat", async (_event, request = {}) => {
 });
 
 app.whenReady().then(() => {
-  // Electron needs an explicit display-media handler. Without one, the hosted
-  // web workspace can report getDisplayMedia as unsupported in the desktop app.
-  // Prefer the OS picker where available; otherwise ask the user to choose a
-  // screen/window explicitly. Never silently grant a capture source.
   session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
     try {
       const sources = await desktopCapturer.getSources({
@@ -165,16 +265,14 @@ app.whenReady().then(() => {
     }
   }, { useSystemPicker: true });
 
+  installAppMenu();
   createMainWindow();
-  // User-invoked shortcut. The companion is a normal visible window, not a
-  // stealth capture-evasion mechanism; share the intended window/display.
+  setupUpdater();
   globalShortcut.register("CommandOrControl+Shift+Space", createAssistantWindow);
   globalShortcut.register("CommandOrControl+Shift+H", () => {
     if (assistantWindow && !assistantWindow.isDestroyed() && assistantWindow.isVisible()) assistantWindow.hide();
     else createAssistantWindow();
   });
-  // With an explicitly shared source active, ask Ghost Lab to OCR and explain
-  // the current frame on demand. This does not monitor global mouse clicks.
   globalShortcut.register("CommandOrControl+Shift+Enter", () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
     mainWindow.webContents.executeJavaScript(
