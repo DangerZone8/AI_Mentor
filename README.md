@@ -48,7 +48,7 @@ This repository is a monorepo with two separate Vercel projects. Import the same
 | Vercel project | Root Directory | Framework / build |
 | --- | --- | --- |
 | Frontend | `frontend` | Other; no build or install command required. Vercel serves `index.html` and `config.js` as static files. |
-| API | `backend` | FastAPI; keep the detected Python build settings. The ASGI application is `app/main.py`, with dependencies in `requirements.txt`. |
+| API | `backend` | FastAPI; Vercel discovers the ASGI app through `index.py`, which re-exports `app/main.py`; dependencies are in `requirements.txt`. |
 
 Do not deploy the repository root as a third project: it contains neither app's runtime root. The FastAPI backend needs its own deployment and environment variables. Set `CODEQUEST_API_BASE` in `frontend/config.js` to the API deployment URL, and configure `CODEQUEST_CORS_ORIGINS` on the API to include the exact frontend production origin. Supabase authentication and isolated Java/C++ execution additionally require their project and runner settings.
 
