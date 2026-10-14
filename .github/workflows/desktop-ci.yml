@@ -6,7 +6,7 @@ on:
       - "desktop/**"
       - ".github/workflows/desktop-ci.yml"
   push:
-    branches: [main, desktop-app-integration]
+    branches: [main, desktop-app-integration, desktop-integration-clean]
     tags: ["desktop-v*"]
   workflow_dispatch:
 
