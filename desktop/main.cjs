@@ -173,6 +173,14 @@ app.whenReady().then(() => {
     if (assistantWindow && !assistantWindow.isDestroyed() && assistantWindow.isVisible()) assistantWindow.hide();
     else createAssistantWindow();
   });
+  // With an explicitly shared source active, ask Ghost Lab to OCR and explain
+  // the current frame on demand. This does not monitor global mouse clicks.
+  globalShortcut.register("CommandOrControl+Shift+Enter", () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    mainWindow.webContents.executeJavaScript(
+      'document.getElementById("gl-scan-now")?.click()'
+    ).catch(() => {});
+  });
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
   });
