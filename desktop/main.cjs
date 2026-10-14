@@ -105,7 +105,7 @@ ipcMain.handle("codequest:get-session-token", async () => {
 });
 ipcMain.handle("codequest:search-local-files", (_event, query) => searchFiles(String(query || "").slice(0, 300)));
 ipcMain.handle("codequest:mentor-chat", async (_event, request = {}) => {
-  const base = String(request.base || "").trim().replace(/\\/+$/, "");
+  const base = String(request.base || "").trim().replace(/\/+$/, "");
   const token = String(request.token || "").trim();
   const prompt = String(request.prompt || "").trim();
   let parsed;
