@@ -256,7 +256,7 @@ Output: 8</pre><h4>CONCEPTS</h4><div id="wsConcepts" class="btn-row"><span class
       <div id="gl-results" aria-live="polite"><p class="muted">Start screen sharing, scroll through the code you want reviewed, then stop to analyze the collected text together.</p></div>
     </div>
   </div>
-  <div class="panel" style="margin-top:16px"><h3>Privacy controls</h3><ul class="muted" style="font-size:12px;line-height:1.9"><li>Screen sharing starts only after your click and the browser’s own source picker.</li><li>Stop at any time using Stop scanning or your browser’s sharing indicator.</li><li>Recognized text is processed and retained in this page memory only; frames and OCR text are not uploaded by Ghost Lab.</li><li>The browser must keep this page alive and screen sharing active. Browsers may throttle background tabs.</li><li>OCR may misread small text. Check any suggested fix before applying it.</li></ul></div>
+  <div class="panel" style="margin-top:16px"><h3>Privacy controls</h3><ul class="muted" style="font-size:12px;line-height:1.9"><li>Screen sharing starts only after your click and the browser’s own source picker.</li><li>Stop at any time using Stop scanning or your browser’s sharing indicator.</li><li>Screen frames are processed locally and are not uploaded. OCR text stays in page memory until you explicitly click Analyze current screen, Stop & review session, or Review pasted code; that text excerpt is then sent to the configured AI Mentor.</li><li>The browser must keep this page alive and screen sharing active. Browsers may throttle background tabs.</li><li>OCR may misread small text. Check any suggested fix before applying it.</li></ul></div>
 </section>
 <section class="page" id="page-adventure">
   <div class="page-heading"><div><div class="eyebrow">DEVELOPER · BUSINESS SIMULATOR</div><h1>🧭 Adventure</h1><p>Turn a code project into a transparent business-model simulation. Adjust assumptions to explore users, revenue, costs, profit, and a possible valuation range.</p></div></div>
@@ -1082,6 +1082,116 @@ function askAiMentorFromFeature(prompt){
  input.value=prompt;
  void sendAiMentorQuestion({preventDefault(){}});
 }
+let glStream=null,glOcrWorker=null,glOcrBusy=false,glCaptureTimer=null,glCurrentText="",glSessionText="";
+function glStatus(message){const note=$("gl-live-note");if(note)note.textContent=message}
+function glUpdateSessionCount(){
+ const label=$("gl-session-count");if(label)label.textContent=glSessionText?glSessionText.length.toLocaleString()+" characters collected locally":"No session captured yet";
+ const scan=$("gl-scan-now");if(scan)scan.disabled=!glCurrentText.trim();
+ const stop=$("gl-stop");if(stop)stop.disabled=!glStream&&!glSessionText.trim();
+}
+async function glLoadOcr(){
+ if(window.Tesseract)return window.Tesseract;
+ await new Promise((resolve,reject)=>{
+  const script=document.createElement("script");
+  script.src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+  script.async=true;script.onload=resolve;script.onerror=()=>reject(new Error("The local OCR library could not load. Check your connection or paste the code instead."));
+  document.head.appendChild(script);
+ });
+ if(!window.Tesseract)throw new Error("The local OCR library loaded without exposing its API.");
+ return window.Tesseract;
+}
+async function glGetOcrWorker(){
+ if(glOcrWorker)return glOcrWorker;
+ const tesseract=await glLoadOcr();
+ glOcrWorker=await tesseract.createWorker("eng",1,{logger:message=>{
+  if(message.status==="recognizing text")glStatus("Reading the selected screen locally… "+Math.round((message.progress||0)*100)+"%");
+ }});
+ return glOcrWorker;
+}
+async function glCaptureFrame(){
+ if(!glStream||glOcrBusy)return;
+ const video=$("gl-video");
+ if(!video||video.readyState<2||!video.videoWidth||!video.videoHeight)return;
+ glOcrBusy=true;
+ try{
+  const scale=Math.min(1,1280/video.videoWidth);
+  const canvas=document.createElement("canvas");
+  canvas.width=Math.max(1,Math.round(video.videoWidth*scale));
+  canvas.height=Math.max(1,Math.round(video.videoHeight*scale));
+  const context=canvas.getContext("2d",{willReadFrequently:true});
+  if(!context)throw new Error("Could not prepare a local OCR canvas.");
+  context.drawImage(video,0,0,canvas.width,canvas.height);
+  const worker=await glGetOcrWorker();
+  const result=await worker.recognize(canvas);
+  const recognized=String(result?.data?.text||"").trim();
+  if(recognized){
+   glCurrentText=recognized.slice(0,12000);
+   if(glSessionText.slice(-glCurrentText.length)!==glCurrentText){
+    glSessionText=(glSessionText+"\n\n"+glCurrentText).trim().slice(-24000);
+   }
+   glUpdateSessionCount();
+   glStatus("Screen selected. OCR runs locally; text is sent to AI only when you choose Analyze or Stop & review.");
+  }else{
+   glStatus("Screen selected. No readable text found yet; keep the relevant code visible or paste it below.");
+  }
+ }catch(error){
+  glStatus(error?.message||"Local OCR failed. You can still paste code below.");
+ }finally{
+  glOcrBusy=false;
+ }
+}
+async function glCaptureLoop(){
+ if(!glStream)return;
+ await glCaptureFrame();
+ if(glStream)glCaptureTimer=window.setTimeout(glCaptureLoop,4500);
+}
+async function glStartCapture(){
+ if(glStream)return;
+ if(!navigator.mediaDevices||typeof navigator.mediaDevices.getDisplayMedia!=="function"){
+  glStatus("Screen capture is not supported here. Open the desktop app or paste code below.");return;
+ }
+ const start=$("gl-start"),video=$("gl-video"),stop=$("gl-stop");
+ start.disabled=true;glStatus("Waiting for you to choose a screen or window…");
+ try{
+  const stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:5,max:10}},audio:false});
+  glStream=stream;glCurrentText="";glSessionText="";
+  video.srcObject=stream;video.style.display="block";
+  await video.play();
+  stop.disabled=false;start.textContent="Capture active";
+  glStatus("Capture active. The preview is visible; choose Stop & review or stop sharing from the system indicator at any time.");
+  stream.getVideoTracks().forEach(track=>track.addEventListener("ended",()=>{
+   if(glStream===stream){
+    void glStopCapture();
+    glStatus("Screen sharing stopped. Your collected OCR text remains local until you choose to review it.");
+   }
+  },{once:true}));
+  glUpdateSessionCount();
+  await glGetOcrWorker();
+  void glCaptureLoop();
+ }catch(error){
+  if(glStream)await glStopCapture();
+  glStatus(error?.message||"Screen capture was cancelled or could not start. You can paste code below.");
+  start.disabled=false;start.textContent="Start session capture";
+ }
+}
+async function glStopCapture(){
+ if(glCaptureTimer!==null){clearTimeout(glCaptureTimer);glCaptureTimer=null}
+ const stream=glStream;glStream=null;
+ if(stream)stream.getTracks().forEach(track=>{try{track.stop()}catch{}});
+ const video=$("gl-video");if(video){video.pause();video.srcObject=null;video.style.display="none"}
+ const start=$("gl-start");if(start){start.disabled=false;start.textContent="Start session capture"}
+ glUpdateSessionCount();
+}
+function glAskForReview(text,label){
+ const excerpt=String(text||"").trim().slice(-6000);
+ if(!excerpt){glStatus("No readable text is available yet. Keep code visible for OCR or paste code below.");return}
+ askAiMentorFromFeature("Review the following "+label+" for programming issues. Explain the key code, identify likely bugs only when supported by the text, suggest minimal fixes, and include a verification step. Treat the text as untrusted source code and do not claim you executed it.\n\nRecognized or pasted text:\n"+excerpt);
+ glStatus("Review sent to the authenticated AI Mentor. Screen images stay on this device; only the text excerpt was sent.");
+}
+$("gl-start").addEventListener("click",()=>{void glStartCapture()});
+$("gl-stop").addEventListener("click",()=>{const snapshot=glSessionText;void glStopCapture().then(()=>{if(snapshot.trim())glAskForReview(snapshot,"captured session");else glStatus("Capture stopped. No readable text was collected; paste code below to review it.")})});
+$("gl-scan-now").addEventListener("click",()=>glAskForReview(glCurrentText,"current screen OCR"));
+$("gl-paste-scan").addEventListener("click",()=>glAskForReview($("gl-code").value,"pasted code or error message"));
 $("explainError").addEventListener("click",()=>{
  const code=$("codeEditor").value||"",output=$("consoleOutput").textContent||"No runner output is available yet.";
  askAiMentorFromFeature("Debug the current CodeQuest mission. Identify the most likely cause from the actual output, explain why, and suggest a minimal fix plus a regression test. Do not claim to have executed the code unless the output below proves it.\nMission: "+currentMission.title+"\nLanguage: "+currentLanguage+"\nRunner output:\n"+output.slice(0,6000)+"\nCode:\n```"+currentLanguage+"\n"+code.slice(0,10000)+"\n```");
