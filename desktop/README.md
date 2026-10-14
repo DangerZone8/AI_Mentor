@@ -1,6 +1,6 @@
 # CodeQuest Desktop
 
-This folder is a first desktop-app packaging scaffold. It wraps the deployed CodeQuest web app in a cross-platform Electron window so the same web UI can be installed on Windows, macOS, and Linux.
+Cross-platform Electron desktop shell for CodeQuest, with a user-invoked assistant panel and an initial local project index/search.
 
 ## Development
 
@@ -12,10 +12,7 @@ npm install
 npm start
 ```
 
-By default, the app opens `https://ai-mentor-opal.vercel.app/`. To test a different deployment:
-
-- Windows PowerShell: `$env:CODEQUEST_DESKTOP_URL="https://your-preview.example"; npm start`
-- macOS/Linux: `CODEQUEST_DESKTOP_URL="https://your-preview.example" npm start`
+By default, the main window opens `https://ai-mentor-opal.vercel.app/`. To test a different deployment, set `CODEQUEST_DESKTOP_URL` to an HTTPS URL.
 
 ## Build installers
 
@@ -25,24 +22,29 @@ npm run dist:mac
 npm run dist:linux
 ```
 
-Installers are written to `desktop/dist/`. Builds should be run on the target OS (especially macOS signing/notarization). These packaging commands are scaffolded but have not yet been run in CI.
+Installers are written to `desktop/dist/`. Build and test on the target operating system. macOS distribution generally requires signing/notarization for a smooth install.
 
-## Integration plan
+## Current implemented desktop features
 
-1. Keep the existing CodeQuest web frontend and API as the shared product surface.
-2. Add a dedicated Electron adapter for native desktop capabilities through a minimal preload API and main-process IPC. Browser permissions and explicit user consent are required for screen capture, microphone, accessibility, or any background feature.
-3. Port selected Constella capabilities behind separate modules: user-selected local-folder indexing, local search/memory, and knowledge-graph views. Do not merge both upstream branches wholesale; compare them and port specific features with attribution and license compliance.
-4. Add platform-specific CI builds, signing, auto-updates, crash reporting, and end-to-end tests before calling the app production-ready.
+- Separate assistant panel opened by **Ctrl+Shift+Space** (Cmd+Shift+Space on macOS).
+- Assistant panel sends questions/code to the existing authenticated `POST /api/v1/mentor/chat` endpoint.
+- The panel accepts the deployed API base URL and a current Supabase access token for the session; it does not save either to disk. Do not paste an OpenAI API key into the desktop client.
+- User-selected local folder indexing for common text/code files, with size/depth/file-count limits and a simple keyword search.
+- Isolated Electron renderer: context isolation, Node integration disabled, sandbox enabled, and narrow preload APIs.
+- External links open in the system browser.
 
-## Upstream project notes
+## Important setup
 
-The requested Constella repository is an Electron/React desktop prototype with local-first file indexing, SQLite/vector search, knowledge graph synthesis, and an MCP bridge. Its `main` and `development` branches differ; they should be compared feature-by-feature rather than overlaid blindly.
+The hosted API must be deployed and configured with server-side `OPENAI_API_KEY`, `SUPABASE_URL`, and `SUPABASE_PUBLISHABLE_KEY`. The assistant panel currently requires a valid Supabase access token pasted into the panel; a seamless shared sign-in session still needs integration. Keep all provider secrets on the backend, never in the frontend or desktop package.
 
-The repository's README and LICENSE metadata are inconsistent: the README mentions CC BY-NC while the checked-in LICENSE file is AGPL-3.0. Before copying or distributing upstream implementation code, resolve the applicable license and satisfy its obligations. This scaffold does not copy Constella source code.
+## Not yet implemented / not verified
 
-## Current limitations
+This is not yet a complete Constella or Cluely replacement. The following are still pending: shared desktop/web sign-in, AI-assisted local retrieval (search results must currently be copied into the prompt manually), SQLite/vector embeddings, knowledge graph, scheduler, MCP server, full agent framework, global screen capture/OCR, audio transcription, permission UX for capture, cross-platform window/screen-share testing, update channel, code signing/notarization, CI installer verification, and end-to-end tests. The assistant is a normal visible window; it does not attempt to evade screen-sharing capture or conceal assistance from people evaluating the work.
 
-- This is a desktop wrapper around the hosted website, not yet a fully offline/local-first app.
-- The desktop bridge currently exposes only an app marker and platform/version metadata.
-- Screen observation, global hotkeys, microphone access, local-folder indexing, and Constella's knowledge engine are not implemented by this scaffold.
-- The web app still requires its configured hosted API and authentication providers.
+## Constella upstream licensing
+
+The requested upstream repository's README and checked-in license metadata appeared inconsistent (README referenced CC BY-NC while LICENSE contained AGPL-3.0 text). This branch does not copy Constella source. Before porting or redistributing its code, resolve the applicable license and comply with its terms.
+
+## Security
+
+The local indexer only reads a user-selected directory and filters to common text/code extensions. It skips common dependency/build directories and caps traversal and file sizes. Treat project files as sensitive; do not index secrets or folders you do not want searched. No OpenAI key is embedded in the desktop app.
