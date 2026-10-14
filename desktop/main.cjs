@@ -34,8 +34,8 @@ function createMainWindow() {
 
 function createAssistantWindow() {
   if (assistantWindow && !assistantWindow.isDestroyed()) {
-    assistantWindow.show();
-    assistantWindow.focus();
+    if (assistantWindow.isVisible()) assistantWindow.focus();
+    else { assistantWindow.show(); assistantWindow.focus(); }
     return;
   }
   assistantWindow = new BrowserWindow({
@@ -47,11 +47,28 @@ function createAssistantWindow() {
       contextIsolation: true, nodeIntegration: false, sandbox: true
     }
   });
-  assistantWindow.setAlwaysOnTop(true);
+  assistantWindow.setAlwaysOnTop(true, "floating");
   assistantWindow.loadFile(path.join(__dirname, "assistant.html"));
   assistantWindow.on("closed", () => { assistantWindow = null; });
 }
 
+ipcMain.handle("codequest:assistant-control", (_event, action) => {
+  if (!assistantWindow || assistantWindow.isDestroyed()) return { ok: false };
+  if (action === "hide") { assistantWindow.hide(); return { ok: true, hidden: true }; }
+  if (action === "always-on-top") {
+    const enabled = !assistantWindow.isAlwaysOnTop();
+    assistantWindow.setAlwaysOnTop(enabled, "floating");
+    return { ok: true, alwaysOnTop: enabled };
+  }
+  if (action === "compact") {
+    const compact = assistantWindow.getSize()[0] < 400;
+    if (compact) assistantWindow.setSize(430, 680, true);
+    else assistantWindow.setSize(340, 480, true);
+    assistantWindow.center();
+    return { ok: true, compact: !compact };
+  }
+  return { ok: false, error: "Unknown assistant action." };
+});
 ipcMain.handle("codequest:choose-index-folder", async () => {
   const result = await dialog.showOpenDialog({ properties: ["openDirectory"] });
   if (result.canceled || !result.filePaths[0]) return { canceled: true };
@@ -116,6 +133,10 @@ app.whenReady().then(() => {
   // User-invoked shortcut. The companion is a normal visible window, not a
   // stealth capture-evasion mechanism; share the intended window/display.
   globalShortcut.register("CommandOrControl+Shift+Space", createAssistantWindow);
+  globalShortcut.register("CommandOrControl+Shift+H", () => {
+    if (assistantWindow && !assistantWindow.isDestroyed() && assistantWindow.isVisible()) assistantWindow.hide();
+    else createAssistantWindow();
+  });
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
   });
