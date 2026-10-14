@@ -1,6 +1,6 @@
 # CodeQuest Desktop
 
-Cross-platform Electron desktop companion for CodeQuest, with a separate user-invoked coding assistant and bounded local project indexing/search.
+Cross-platform Electron desktop companion for CodeQuest, with a separate user-invoked coding assistant, bounded local project indexing/search, and consent-based screen capture for OCR-based code review.
 
 ## Development
 
@@ -37,6 +37,8 @@ Installers are written to `desktop/dist/`. Build and test on the target operatin
 - Attempts to retrieve the active Supabase access token from the main CodeQuest window in memory; manual entry is available as a fallback. This requires the hosted frontend's authentication configuration to be set up and the user to be signed in.
 - Optional checkbox to include matching excerpts from the user's selected local project folder with an assistant request. Excerpts are sent only when this option is checked.
 - Bounded local indexer for common text/code formats: 1,500 files maximum, 256 KiB per file, 20 MiB total, depth limit 12, and common dependency/build folders skipped.
+- Consent-based screen/window capture through Electron's display-media handler, using the OS picker where available and an explicit source-choice dialog as fallback. Captured frames are OCR'd locally; screen images are not uploaded.
+- A manual **Analyze current screen** action sends OCR text—not the screenshot—to the configured CodeQuest AI endpoint for a technical explanation. **Ctrl+Shift+Enter** (Cmd+Shift+Enter on macOS) triggers that action while screen sharing is active. Stopping a session requests an AI review of the collected text when the user is signed in.
 - Isolated Electron renderers, Node integration disabled, sandbox enabled, and IPC methods exposed only to the assistant window.
 - External links open in the system browser.
 
@@ -44,7 +46,7 @@ Installers are written to `desktop/dist/`. Build and test on the target operatin
 
 The backend must be deployed and configured with server-side `OPENAI_API_KEY`, `SUPABASE_URL`, and `SUPABASE_PUBLISHABLE_KEY`. The desktop assistant requires the correct backend URL and a valid Supabase session. The desktop assistant accepts only the configured CodeQuest origin or the explicit `CODEQUEST_API_BASE_URL` origin (localhost is allowed for development). This prevents a typo or arbitrary URL from receiving the bearer token. If the frontend uses a different backend host, configure the trusted origin before launching the app. Never paste an OpenAI API key into the desktop app.
 
-This is not yet a complete Constella or Cluely replacement. Persistent SQLite memory, semantic vector retrieval/embeddings, knowledge graph, scheduler, MCP servers, and a full agent framework are not implemented. It does not capture the screen, run OCR, transcribe audio, or conceal assistance from screen-sharing participants. Code signing/notarization, automatic updates, and end-to-end testing are also pending. CI has been configured but its results have not yet been verified.
+This is not yet a complete Constella replacement. Persistent SQLite memory, semantic vector retrieval/embeddings, knowledge graph, scheduler, MCP servers, and a full agent framework are not implemented. Meeting microphone/system-audio recording, speech transcription, speaker diarization, and live spoken-response suggestions are not implemented yet. The custom CodeQuest mark is now used in the web workspace and assistant panel; the packaged Windows executable still needs a dedicated ICO/PNG installer icon. The screen-aware feature requires the user to start capture and select a source; it is not a hidden screen-sharing bypass. Code signing/notarization, automatic updates, and end-to-end testing are also pending.
 
 ## Constella upstream licensing
 
