@@ -57,6 +57,21 @@ ipcMain.handle("codequest:choose-index-folder", async () => {
   if (result.canceled || !result.filePaths[0]) return { canceled: true };
   return { canceled: false, ...await indexFolder(result.filePaths[0]) };
 });
+ipcMain.handle("codequest:get-session-token", async () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return { token: "" };
+  try {
+    const expectedOrigin = new URL(APP_URL).origin;
+    const currentOrigin = new URL(mainWindow.webContents.getURL()).origin;
+    if (currentOrigin !== expectedOrigin) return { token: "" };
+    const token = await mainWindow.webContents.executeJavaScript(
+      'typeof verifiedAccessToken === "string" ? verifiedAccessToken : ""',
+      true
+    );
+    return { token: typeof token === "string" ? token : "" };
+  } catch {
+    return { token: "" };
+  }
+});
 ipcMain.handle("codequest:search-local-files", (_event, query) => searchFiles(String(query || "").slice(0, 300)));
 ipcMain.handle("codequest:mentor-chat", async (_event, request = {}) => {
   const base = String(request.base || "").trim().replace(/\\/+$/, "");
