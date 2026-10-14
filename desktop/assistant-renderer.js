@@ -74,3 +74,23 @@ if (window.codeQuestDesktop && window.codeQuestDesktop.isDesktopApp) {
   $("searchLocal").disabled = true;
   $("localResults").textContent = "Local project indexing is available in the installed desktop app.";
 }
+
+if (window.codeQuestDesktop?.isDesktopApp) {
+  $("compact").addEventListener("click", async () => {
+    try {
+      const result = await window.codeQuestDesktop.assistantControl("compact");
+      $("compact").textContent = result.compact ? "Expand" : "Compact";
+    } catch { status.textContent = "Window resize failed"; }
+  });
+  $("pin").addEventListener("click", async () => {
+    try {
+      const result = await window.codeQuestDesktop.assistantControl("always-on-top");
+      $("pin").textContent = result.alwaysOnTop ? "Unpin" : "Pin on top";
+    } catch { status.textContent = "Pin setting failed"; }
+  });
+  $("hideAssistant").addEventListener("click", () => window.codeQuestDesktop.assistantControl("hide"));
+} else {
+  $("compact").disabled = true;
+  $("pin").disabled = true;
+  $("hideAssistant").disabled = true;
+}
