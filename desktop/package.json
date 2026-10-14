@@ -27,22 +27,26 @@
       "assistant.html",
       "assistant-renderer.js",
       "local-indexer.cjs",
+      "api-url.cjs",
       "package.json"
     ],
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "artifactName": "CodeQuest-Setup.${ext}"
     },
     "mac": {
       "target": [
         "dmg"
-      ]
+      ],
+      "artifactName": "CodeQuest-macOS.${ext}"
     },
     "linux": {
       "target": [
         "AppImage"
-      ]
+      ],
+      "artifactName": "CodeQuest-Linux.${ext}"
     }
   }
 }

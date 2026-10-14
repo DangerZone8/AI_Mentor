@@ -13,7 +13,7 @@ npm start
 npm test
 ```
 
-By default, the main window opens `https://ai-mentor-opal.vercel.app/`. To test another deployment, set `CODEQUEST_DESKTOP_URL` to its HTTPS URL.
+By default, the main window opens `https://ai-mentor-opal.vercel.app/`. To test another deployment, set `CODEQUEST_DESKTOP_URL` to its HTTPS URL. If the backend is hosted on a different origin, set `CODEQUEST_API_BASE_URL` to that trusted HTTPS origin; the assistant rejects API origins that are not explicitly trusted. Localhost HTTP is permitted for development.
 
 ## Build installers
 
@@ -27,7 +27,7 @@ Installers are written to `desktop/dist/`. Build and test on the target operatin
 
 ## CI and releases
 
-`.github/workflows/desktop-ci.yml` runs indexer tests, syntax checks, and Windows/macOS/Linux installer builds on relevant pull requests and pushes. Build artifacts are retained for 14 days. `.github/workflows/desktop-release.yml` builds the three installers for a `desktop-v*` tag and publishes a **draft** GitHub Release with the assets. Review the draft and test each installer before making a release public. The website's Download Desktop page links to GitHub Releases.
+`.github/workflows/desktop-ci.yml` runs unit tests, syntax checks, and Windows/macOS/Linux installer builds sequentially on relevant pull requests and pushes. Build artifacts are retained for 14 days. The desktop integration CI run completed all four stages successfully; run it again for any later changes. `.github/workflows/desktop-release.yml` builds the three installers for a `desktop-v*` tag and publishes a **draft** GitHub Release with the assets. Review the draft and test each installer before making a release public. The website's Download Desktop page links to GitHub Releases.
 
 ## Implemented features
 
@@ -42,7 +42,7 @@ Installers are written to `desktop/dist/`. Build and test on the target operatin
 
 ## Required configuration and limitations
 
-The backend must be deployed and configured with server-side `OPENAI_API_KEY`, `SUPABASE_URL`, and `SUPABASE_PUBLISHABLE_KEY`. The desktop assistant requires the correct backend URL and a valid Supabase session. Only enter a backend URL you control and trust; the access token is sent to that URL. Never paste an OpenAI API key into the desktop app.
+The backend must be deployed and configured with server-side `OPENAI_API_KEY`, `SUPABASE_URL`, and `SUPABASE_PUBLISHABLE_KEY`. The desktop assistant requires the correct backend URL and a valid Supabase session. The desktop assistant accepts only the configured CodeQuest origin or the explicit `CODEQUEST_API_BASE_URL` origin (localhost is allowed for development). This prevents a typo or arbitrary URL from receiving the bearer token. If the frontend uses a different backend host, configure the trusted origin before launching the app. Never paste an OpenAI API key into the desktop app.
 
 This is not yet a complete Constella or Cluely replacement. Persistent SQLite memory, semantic vector retrieval/embeddings, knowledge graph, scheduler, MCP servers, and a full agent framework are not implemented. It does not capture the screen, run OCR, transcribe audio, or conceal assistance from screen-sharing participants. Code signing/notarization, automatic updates, and end-to-end testing are also pending. CI has been configured but its results have not yet been verified.
 

@@ -1,5 +1,6 @@
 const { app, BrowserWindow, globalShortcut, shell, ipcMain, dialog } = require("electron");
 const { indexFolder, searchFiles } = require("./local-indexer.cjs");
+const { normalizeApiBase } = require("./api-url.cjs");
 const path = require("node:path");
 
 const APP_URL = process.env.CODEQUEST_DESKTOP_URL || "https://ai-mentor-opal.vercel.app/";
@@ -105,14 +106,9 @@ ipcMain.handle("codequest:get-session-token", async () => {
 });
 ipcMain.handle("codequest:search-local-files", (_event, query) => searchFiles(String(query || "").slice(0, 300)));
 ipcMain.handle("codequest:mentor-chat", async (_event, request = {}) => {
-  const base = String(request.base || "").trim().replace(/\/+$/, "");
   const token = String(request.token || "").trim();
   const prompt = String(request.prompt || "").trim();
-  let parsed;
-  try { parsed = new URL(base); } catch { throw new Error("Enter a valid CodeQuest API URL."); }
-  const localHttp = parsed.protocol === "http:" && ["localhost", "127.0.0.1"].includes(parsed.hostname);
-  if (parsed.protocol !== "https:" && !localHttp) throw new Error("Use HTTPS for the API URL (HTTP is allowed only for localhost development).");
-  if (parsed.username || parsed.password) throw new Error("Do not put credentials in the API URL.");
+  const base = normalizeApiBase(request.base, [APP_URL, process.env.CODEQUEST_API_BASE_URL]);
   if (!token) throw new Error("A current Supabase access token is required.");
   if (!prompt || prompt.length > 8000) throw new Error("The request must contain between 1 and 8000 characters.");
   const response = await fetch(base + "/api/v1/mentor/chat", {

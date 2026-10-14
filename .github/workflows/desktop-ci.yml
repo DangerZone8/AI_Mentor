@@ -35,6 +35,7 @@ jobs:
           node --check preload.cjs
           node --check assistant-renderer.js
           node --check local-indexer.cjs
+          node --check api-url.cjs
 
   build-windows:
     name: 2 - Windows installer
