@@ -18,7 +18,9 @@
   "build": {
     "appId": "com.codequest.desktop",
     "productName": "CodeQuest",
-    "directories": { "output": "dist" },
+    "directories": {
+      "output": "dist"
+    },
     "files": [
       "main.cjs",
       "preload.cjs",
@@ -28,8 +30,23 @@
       "api-url.cjs",
       "package.json"
     ],
-    "win": { "target": ["nsis"] },
-    "mac": { "target": ["dmg"] },
-    "linux": { "target": ["AppImage"] }
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "CodeQuest-Setup.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "artifactName": "CodeQuest-macOS.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "artifactName": "CodeQuest-Linux.${ext}"
+    }
   }
 }
