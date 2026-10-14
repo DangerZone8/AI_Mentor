@@ -25,6 +25,7 @@
       "preload.cjs",
       "assistant.html",
       "assistant-renderer.js",
+      "local-indexer.cjs",
       "package.json"
     ],
     "win": {
