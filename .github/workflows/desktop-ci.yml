@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Install desktop dependencies
         working-directory: desktop
         run: npm install --no-audit --no-fund
@@ -44,7 +44,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Install desktop dependencies
         working-directory: desktop
         run: npm install --no-audit --no-fund
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Install desktop dependencies
         working-directory: desktop
         run: npm install --no-audit --no-fund
@@ -90,7 +90,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Install desktop dependencies
         working-directory: desktop
         run: npm install --no-audit --no-fund
