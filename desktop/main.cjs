@@ -57,6 +57,20 @@ ipcMain.handle("codequest:choose-index-folder", async () => {
   if (result.canceled || !result.filePaths[0]) return { canceled: true };
   return { canceled: false, ...await indexFolder(result.filePaths[0]) };
 });
+ipcMain.handle("codequest:get-app-config", async () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return { apiBase: "" };
+  try {
+    const expectedOrigin = new URL(APP_URL).origin;
+    const currentOrigin = new URL(mainWindow.webContents.getURL()).origin;
+    if (currentOrigin !== expectedOrigin) return { apiBase: "" };
+    return await mainWindow.webContents.executeJavaScript(
+      '({ apiBase: typeof API_BASE_URL === "string" ? API_BASE_URL : (window.CODEQUEST_API_BASE || "") })',
+      true
+    );
+  } catch {
+    return { apiBase: "" };
+  }
+});
 ipcMain.handle("codequest:get-session-token", async () => {
   if (!mainWindow || mainWindow.isDestroyed()) return { token: "" };
   try {
