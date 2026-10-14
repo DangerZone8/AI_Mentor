@@ -1,0 +1,67 @@
+name: CodeQuest Desktop CI
+
+on:
+  pull_request:
+    paths:
+      - "desktop/**"
+      - ".github/workflows/desktop-ci.yml"
+  push:
+    branches: [main, desktop-app-integration]
+    tags: ["desktop-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+      - name: Test local indexer
+        working-directory: desktop
+        run: npm test
+      - name: Validate JavaScript syntax
+        working-directory: desktop
+        run: |
+          node --check main.cjs
+          node --check preload.cjs
+          node --check assistant-renderer.js
+          node --check local-indexer.cjs
+
+  build-installers:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: win
+          - os: macos-latest
+            target: mac
+          - os: ubuntu-latest
+            target: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+      - name: Build installer
+        working-directory: desktop
+        run: npm run dist:${{ matrix.target }}
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeQuest-${{ matrix.target }}-${{ github.sha }}
+          path: desktop/dist/*
+          if-no-files-found: error
+          retention-days: 14
