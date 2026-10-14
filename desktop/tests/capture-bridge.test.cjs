@@ -23,3 +23,15 @@ test("capture handler asks the user to select a source and supports cancellation
 test("capture handler does not delegate away from the explicit bridge to the system picker", () => {
   assert.doesNotMatch(main, /setDisplayMediaRequestHandler[\s\S]{0,2500}\},\s*\{\s*useSystemPicker\s*:\s*true\s*\}\s*\)/);
 });
+
+test("main CodeQuest window loads the desktop preload bridge", () => {
+  const mainWindow = main.indexOf("function createMainWindow()");
+  const assistantWindow = main.indexOf("function createAssistantWindow()");
+  assert.notEqual(mainWindow, -1, "main window factory must exist");
+  assert.notEqual(assistantWindow, -1, "assistant window factory must exist");
+  const mainBlock = main.slice(mainWindow, assistantWindow);
+  assert.match(mainBlock, /preload:\s*path\.join\(__dirname,\s*"preload\.cjs"\)/,
+    "the hosted Ghost Lab needs preload.cjs in the main window, not only the assistant");
+  assert.match(mainBlock, /contextIsolation:\s*true/);
+  assert.match(mainBlock, /nodeIntegration:\s*false/);
+});
