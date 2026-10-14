@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, shell, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, globalShortcut, shell, ipcMain, dialog, desktopCapturer, session } = require("electron");
 const { indexFolder, searchFiles } = require("./local-indexer.cjs");
 const { normalizeApiBase } = require("./api-url.cjs");
 const path = require("node:path");
@@ -125,6 +125,46 @@ ipcMain.handle("codequest:mentor-chat", async (_event, request = {}) => {
 });
 
 app.whenReady().then(() => {
+  // Electron needs an explicit display-media handler. Without one, the hosted
+  // web workspace can report getDisplayMedia as unsupported in the desktop app.
+  // Prefer the OS picker where available; otherwise ask the user to choose a
+  // screen/window explicitly. Never silently grant a capture source.
+  session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
+    try {
+      const sources = await desktopCapturer.getSources({
+        types: ["screen", "window"],
+        thumbnailSize: { width: 0, height: 0 },
+        fetchWindowIcons: false
+      });
+      if (!sources.length) { callback({}); return; }
+      const choices = sources.slice(0, 5);
+      const buttons = choices.map((source, index) =>
+        (index + 1) + ". " + String(source.name || "Screen/window").slice(0, 48)
+      );
+      buttons.push("Cancel");
+      const result = await dialog.showMessageBox({
+        type: "question",
+        title: "Choose what CodeQuest can capture",
+        message: "Select the screen or window to share.",
+        detail: "Only the source you choose will be captured. Stop sharing at any time.",
+        buttons,
+        defaultId: 0,
+        cancelId: buttons.length - 1,
+        noLink: true
+      });
+      if (result.response < 0 || result.response >= choices.length) {
+        callback({});
+        return;
+      }
+      const selected = choices[result.response];
+      const grant = { video: selected };
+      if (request.audioRequested && process.platform === "win32") grant.audio = "loopback";
+      callback(grant);
+    } catch {
+      callback({});
+    }
+  }, { useSystemPicker: true });
+
   createMainWindow();
   // User-invoked shortcut. The companion is a normal visible window, not a
   // stealth capture-evasion mechanism; share the intended window/display.
