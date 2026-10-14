@@ -263,7 +263,7 @@ app.whenReady().then(() => {
     } catch {
       callback({});
     }
-  }, { useSystemPicker: true });
+  });
 
   installAppMenu();
   createMainWindow();
