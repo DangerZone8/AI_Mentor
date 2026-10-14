@@ -23,5 +23,11 @@ test("code explanation, debugging, and next-step actions call the real AI mentor
   assert.match(html, /askAiMentorFromFeature\("Debug the current CodeQuest mission/);
   assert.match(html, /askAiMentorFromFeature\("Explain this code line by line/);
   assert.match(html, /askAiMentorFromFeature\("Give me the next 3 concrete steps/);
+  assert.match(html, /Ask AI to review this file/);
+  assert.match(html, /function glStartCapture\(\)/);
+  assert.match(html, /navigator\.mediaDevices\.getDisplayMedia/);
+  assert.match(html, /tesseract\.createWorker/);
+  assert.match(html, /\$\("gl-start"\)\.addEventListener/);
+  assert.match(html, /frames are processed locally and are not uploaded/);
   assert.doesNotMatch(html, /No real traceback has been collected here/);
 });
