@@ -4,10 +4,17 @@ const status = $("status");
 const answer = $("answer");
 ask.addEventListener("click", async () => {
   const base = $("api").value.trim().replace(/\/+$/, "");
-  const token = $("token").value.trim();
+  let token = $("token").value.trim();
   const prompt = $("prompt").value.trim();
   if (!base || !/^https?:\/\//i.test(base)) { answer.textContent = "Enter your deployed CodeQuest API base URL."; return; }
-  if (!token) { answer.textContent = "Sign in to CodeQuest and provide a current Supabase access token."; return; }
+  if (!token && window.codeQuestDesktop?.isDesktopApp) {
+    try {
+      const session = await window.codeQuestDesktop.getSessionToken();
+      token = session?.token || "";
+      if (token) $("token").value = token;
+    } catch { /* Fall back to manual token entry if the hosted session is unavailable. */ }
+  }
+  if (!token) { answer.textContent = "Sign in to CodeQuest in the main window first, or enter a current Supabase access token."; return; }
   if (!prompt) { answer.textContent = "Enter a question or code snippet first."; return; }
   let promptWithContext = prompt;
   if ($("includeLocalContext")?.checked && window.codeQuestDesktop?.isDesktopApp) {
