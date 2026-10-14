@@ -7,9 +7,7 @@ on:
       - ".github/workflows/desktop-ci.yml"
   push:
     branches: [main, desktop-app-integration]
-    paths:
-      - "desktop/**"
-      - ".github/workflows/desktop-ci.yml"
+    tags: ["desktop-v*"]
   workflow_dispatch:
 
 permissions:
@@ -23,8 +21,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: desktop/package-lock.json
       - name: Install desktop dependencies
         working-directory: desktop
         run: npm install --no-audit --no-fund
