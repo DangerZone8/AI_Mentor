@@ -11,10 +11,13 @@ let manualUpdateCheck = false;
 let updateDialogOpen = false;
 let updateMenuItem;
 
+function showNativeDialog(options) {
+  if (mainWindow && !mainWindow.isDestroyed()) return dialog.showMessageBox(mainWindow, options);
+  return dialog.showMessageBox(options);
+}
+
 function showUpdateMessage(title, message, type = "info") {
-  return dialog.showMessageBox(mainWindow && !mainWindow.isDestroyed() ? mainWindow : null, {
-    type, title, message, buttons: ["OK"], noLink: true
-  });
+  return showNativeDialog({ type, title, message, buttons: ["OK"], noLink: true });
 }
 
 async function checkForUpdates(manual = false) {
@@ -61,7 +64,7 @@ function setupUpdater() {
     if (updateDialogOpen) return;
     updateDialogOpen = true;
     try {
-      const result = await dialog.showMessageBox(mainWindow && !mainWindow.isDestroyed() ? mainWindow : null, {
+      const result = await showNativeDialog({
         type: "info",
         title: "CodeQuest update ready",
         message: "CodeQuest " + info.version + " is downloaded and ready to install.",
