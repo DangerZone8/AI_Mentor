@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CodeQuest Assistant</title>
+<style>
+:root{color-scheme:dark;font:14px/1.5 system-ui,sans-serif;background:#0b1020;color:#e8edff}
+*{box-sizing:border-box}body{margin:0;padding:20px;background:linear-gradient(145deg,#101a35,#0b1020);min-height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}h1{font-size:18px;margin:0}small{color:#9eaccb}
+label{display:block;margin:12px 0 5px;color:#b9c6e8;font-size:12px}input,textarea{width:100%;border:1px solid #344364;background:#111a30;color:#f3f6ff;border-radius:9px;padding:10px;font:inherit}
+textarea{resize:vertical;min-height:105px}button{border:0;border-radius:9px;background:#7c9cff;color:#081126;font-weight:700;padding:10px 13px;cursor:pointer;margin:10px 6px 0 0}button.secondary{background:#263451;color:#e8edff}button:disabled{opacity:.5}
+#answer{white-space:pre-wrap;overflow-wrap:anywhere;background:#111a30;border:1px solid #263451;border-radius:10px;padding:12px;min-height:80px;margin-top:14px}
+.notice{font-size:12px;color:#aebbd9;margin-top:10px}
+</style>
+</head>
+<body>
+<header><h1>✦ CodeQuest Assistant</h1><small id="status">Ready</small></header>
+<p class="notice">Paste a code snippet or question. This panel does not capture your screen or listen to meetings. Use AI assistance in accordance with your team's or event's rules.</p>
+<label for="api">CodeQuest API base URL</label><input id="api" placeholder="https://your-api.example.com" autocomplete="url">
+<label for="token">Supabase access token (session only)</label><input id="token" type="password" placeholder="Paste your current access token" autocomplete="off">
+<label for="prompt">Question or code</label><textarea id="prompt" placeholder="Explain this function, find the bug, or help me reason through a question…"></textarea>
+<div><button id="ask">Ask CodeQuest</button><button id="clear" class="secondary">Clear</button></div>
+<div id="answer" aria-live="polite">Your answer will appear here.</div>
+<p class="notice">Credentials are held in this window's memory and are not saved by this panel. Never paste an OpenAI API key here; the server should keep it in an environment variable.</p>
+<script src="assistant-renderer.js"></script>
+</body></html>
