@@ -43,7 +43,7 @@ The hosted API must be deployed and configured with server-side `OPENAI_API_KEY`
 
 ## Not yet implemented / not verified
 
-This is not yet a complete Constella or Cluely replacement. The following are still pending: shared desktop/web sign-in, AI-assisted local retrieval (search results must currently be copied into the prompt manually), SQLite/vector embeddings, knowledge graph, scheduler, MCP server, full agent framework, global screen capture/OCR, audio transcription, permission UX for capture, cross-platform window/screen-share testing, update channel, code signing/notarization, a website download page/release integration, CI results on all three operating systems, and end-to-end tests. The assistant is a normal visible window; it does not attempt to evade screen-sharing capture or conceal assistance from people evaluating the work.
+This is not yet a complete Constella or Cluely replacement. The following are still pending: robust shared desktop/web sign-in validation, AI-assisted local retrieval (search results must currently be copied into the prompt manually), SQLite/vector embeddings, knowledge graph, scheduler, MCP server, full agent framework, global screen capture/OCR, audio transcription, permission UX for capture, cross-platform window/screen-share testing, update channel, code signing/notarization, a website download page/release integration, CI results on all three operating systems, and end-to-end tests. The assistant is a normal visible window; it does not attempt to evade screen-sharing capture or conceal assistance from people evaluating the work.
 
 ## Constella upstream licensing
 
