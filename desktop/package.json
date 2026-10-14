@@ -6,9 +6,9 @@
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
-    "dist:win": "electron-builder --win nsis --publish onTagOrDraft",
-    "dist:mac": "electron-builder --mac dmg zip --publish onTagOrDraft",
-    "dist:linux": "electron-builder --linux AppImage --publish onTagOrDraft",
+    "dist:win": "electron-builder --win nsis --publish never",
+    "dist:mac": "electron-builder --mac dmg zip --publish never",
+    "dist:linux": "electron-builder --linux AppImage --publish never",
     "test": "node --test"
   },
   "dependencies": {
