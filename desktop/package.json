@@ -8,7 +8,8 @@
     "start": "electron .",
     "dist:win": "electron-builder --win nsis",
     "dist:mac": "electron-builder --mac dmg",
-    "dist:linux": "electron-builder --linux AppImage"
+    "dist:linux": "electron-builder --linux AppImage",
+    "test": "node --test"
   },
   "devDependencies": {
     "electron": "^38.2.0",
@@ -26,7 +27,8 @@
       "assistant.html",
       "assistant-renderer.js",
       "local-indexer.cjs",
-      "package.json"
+      "package.json",
+      "local-indexer.test.cjs"
     ],
     "win": {
       "target": [
