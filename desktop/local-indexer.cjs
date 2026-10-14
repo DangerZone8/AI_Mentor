@@ -44,8 +44,13 @@ function searchFiles(query, limit = 8) {
   const results = [];
   for (const file of indexed) {
     const lower = file.content.toLowerCase();
-    const score = terms.reduce((n, term) => n + (lower.includes(term) ? 1 : 0), 0);
-    if (score) results.push({ path: file.path, score, excerpt: file.content.slice(Math.max(0, lower.indexOf(terms.find(t => lower.includes(t)) || "") - 180), 900) });
+    const lowerPath = file.path.toLowerCase();
+    const score = terms.reduce((n, term) => n + (lower.includes(term) ? 1 : 0) + (lowerPath.includes(term) ? 2 : 0), 0);
+    if (score) {
+      const matchedTerm = terms.find(term => lower.includes(term));
+      const start = matchedTerm ? Math.max(0, lower.indexOf(matchedTerm) - 180) : 0;
+      results.push({ path: file.path, score, excerpt: file.content.slice(start, start + 900) });
+    }
   }
   results.sort((a, b) => b.score - a.score);
   return { root: indexedRoot, results: results.slice(0, Math.max(1, Math.min(Number(limit) || 8, 10))) };
