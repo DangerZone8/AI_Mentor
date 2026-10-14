@@ -1,4 +1,5 @@
-const { app, BrowserWindow, globalShortcut, shell } = require("electron");
+const { app, BrowserWindow, globalShortcut, shell, ipcMain, dialog } = require("electron");
+const { indexFolder, searchFiles } = require("./local-indexer.cjs");
 const path = require("node:path");
 
 const APP_URL = process.env.CODEQUEST_DESKTOP_URL || "https://ai-mentor-opal.vercel.app/";
@@ -51,6 +52,13 @@ function createAssistantWindow() {
   assistantWindow.loadFile(path.join(__dirname, "assistant.html"));
   assistantWindow.on("closed", () => { assistantWindow = null; });
 }
+
+ipcMain.handle("codequest:choose-index-folder", async () => {
+  const result = await dialog.showOpenDialog({ properties: ["openDirectory"] });
+  if (result.canceled || !result.filePaths[0]) return { canceled: true };
+  return { canceled: false, ...await indexFolder(result.filePaths[0]) };
+});
+ipcMain.handle("codequest:search-local-files", (_event, query) => searchFiles(String(query || "").slice(0, 300)));
 
 app.whenReady().then(() => {
   createMainWindow();
