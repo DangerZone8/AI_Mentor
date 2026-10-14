@@ -35,6 +35,10 @@ The Windows NSIS installer, macOS DMG and ZIP update package, and Linux AppImage
 - Existing installations can only update automatically if they were built with this updater and the same app identity. Users of older builds must install a new updater-enabled installer once.
 - Updates require internet access and a public release. macOS signing/notarization and Linux distribution-specific packaging may still affect installation experience.
 
+## AI-backed actions
+
+The web workspace's **Explain Code**, **Explain Error**, and **Next Step** actions send the selected mission, editor code, and recent console output to the authenticated AI Code Mentor. They are not offline heuristics; they require a reachable configured API, a valid Supabase session, and the server-side AI provider key. The desktop assistant also uses the same backend service. If the AI service is unavailable, the UI should report the configuration or request error instead of pretending it generated an answer.
+
 ## Implemented features
 
 - Main CodeQuest web workspace inside Electron.
