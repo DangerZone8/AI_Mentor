@@ -116,6 +116,10 @@ function createMainWindow() {
     width: 1440, height: 940, minWidth: 900, minHeight: 640,
     title: "CodeQuest", backgroundColor: "#0b1020", autoHideMenuBar: false,
     webPreferences: {
+      // The hosted Ghost Lab runs in this window. It needs the same narrow,
+      // context-isolated preload bridge as the assistant so the packaged app
+      // can identify itself and use desktop-only IPC safely.
+      preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true, nodeIntegration: false, sandbox: true
     }
   });
