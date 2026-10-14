@@ -15,11 +15,11 @@ textarea{resize:vertical;min-height:105px}button{border:0;border-radius:9px;back
 </head>
 <body>
 <header><h1>✦ CodeQuest Assistant</h1><small id="status">Ready</small></header>
-<p class="notice">Paste a code snippet or question. This panel does not capture your screen or listen to meetings. Use AI assistance in accordance with your team's or event's rules.</p>
+<p class="notice">Paste a code snippet or question. This panel does not capture your screen or listen to meetings. Local code excerpts are sent to the configured API only when you enable the checkbox below. Use AI assistance in accordance with your team's or event's rules.</p>
 <div><button id="index" class="secondary">Index a local project folder</button><small id="indexStatus">No folder indexed</small></div><label for="localSearch">Search indexed project</label><input id="localSearch" placeholder="Search filenames and code"><button id="searchLocal" class="secondary">Search local files</button><div id="localResults" class="notice"></div><label for="api">CodeQuest API base URL</label><input id="api" placeholder="https://your-api.example.com" autocomplete="url">
 <label for="token">Supabase access token (session only)</label><input id="token" type="password" placeholder="Paste your current access token" autocomplete="off">
 <label for="prompt">Question or code</label><textarea id="prompt" placeholder="Explain this function, find the bug, or help me reason through a question…"></textarea>
-<div><button id="ask">Ask CodeQuest</button><button id="clear" class="secondary">Clear</button></div>
+<label style="display:flex;gap:8px;align-items:center"><input id="includeLocalContext" type="checkbox" style="width:auto"> Include matching excerpts from my indexed project in this request</label><div><button id="ask">Ask CodeQuest</button><button id="clear" class="secondary">Clear</button></div>
 <div id="answer" aria-live="polite">Your answer will appear here.</div>
 <p class="notice">Credentials are held in this window's memory and are not saved by this panel. Never paste an OpenAI API key here; the server should keep it in an environment variable.</p>
 <script src="assistant-renderer.js"></script>
