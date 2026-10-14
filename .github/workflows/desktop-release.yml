@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version (for example 0.1.0)"
+        description: "Release version (for example 0.1.1; must be higher than the current release)"
         required: true
-        default: "0.1.0"
+        default: "0.1.1"
         type: string
   push:
     tags:
@@ -28,7 +28,7 @@ jobs:
             artifact: windows-installer
           - os: macos-latest
             command: npm run dist:mac
-            artifact: macos-dmg
+            artifact: macos-dmg-and-zip
           - os: ubuntu-latest
             command: npm run dist:linux
             artifact: linux-appimage
@@ -39,17 +39,31 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Set package version for this release
+        working-directory: desktop
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+        run: |
+          VERSION="${INPUT_VERSION#desktop-v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid release version: $VERSION"
+            exit 1
+          fi
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
       - name: Install desktop dependencies
         working-directory: desktop
         run: npm install
-      - name: Build installer
+      - name: Build installer and update metadata
         working-directory: desktop
         run: ${{ matrix.command }}
-      - name: Upload installer artifact
+      - name: Upload installer and update metadata
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: desktop/dist/*
+          path: |
+            desktop/dist/*
+            !desktop/dist/*.blockmap
           if-no-files-found: error
           retention-days: 14
 
@@ -58,11 +72,17 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download all installers
+      - name: Download all installers and updater metadata
         uses: actions/download-artifact@v4
         with:
           path: release-assets
           merge-multiple: true
+      - name: Validate required update metadata
+        shell: bash
+        run: |
+          test -f release-assets/latest.yml
+          test -f release-assets/latest-linux.yml
+          test -f release-assets/latest-mac.yml
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
