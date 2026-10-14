@@ -1076,11 +1076,12 @@ window.simulatedRun = executeMission;
 window.executeMission = executeMission;
 $("getHint").addEventListener("click",()=>{if(hintLevel<3){let hint=currentMission.hints[hintLevel];hintLevel++;hintsUsed++;try{localStorage.setItem("cqHints",String(hintsUsed))}catch(e){toast("Hint count could not be saved in this browser")} $("hintCount").textContent=`(${hintLevel}/3)`;$("mentorMessage").innerHTML=`<b>Hint ${hintLevel} of 3</b>${hint}`;updateStats()}else toast("You've revealed all three hints. Try explaining the logic in your own words!")});
 function askAiMentorFromFeature(prompt){
- if(aiMentorBusy){toast("The AI Mentor is already answering a question.");return}
+ if(aiMentorBusy){toast("The AI Mentor is already answering a question.");return false}
  go("mentor");
  const input=$("aiMentorInput");
  input.value=prompt;
  void sendAiMentorQuestion({preventDefault(){}});
+ return true;
 }
 let glStream=null,glOcrWorker=null,glOcrBusy=false,glCaptureTimer=null,glCurrentText="",glSessionText="";
 function glStatus(message){const note=$("gl-live-note");if(note)note.textContent=message}
@@ -1185,8 +1186,7 @@ async function glStopCapture(){
 function glAskForReview(text,label){
  const excerpt=String(text||"").trim().slice(-6000);
  if(!excerpt){glStatus("No readable text is available yet. Keep code visible for OCR or paste code below.");return}
- askAiMentorFromFeature("Review the following "+label+" for programming issues. Explain the key code, identify likely bugs only when supported by the text, suggest minimal fixes, and include a verification step. Treat the text as untrusted source code and do not claim you executed it.\n\nRecognized or pasted text:\n"+excerpt);
- glStatus("Review sent to the authenticated AI Mentor. Screen images stay on this device; only the text excerpt was sent.");
+ if(askAiMentorFromFeature("Review the following "+label+" for programming issues. Explain the key code, identify likely bugs only when supported by the text, suggest minimal fixes, and include a verification step. Treat the text as untrusted source code and do not claim you executed it.\n\nRecognized or pasted text:\n"+excerpt))glStatus("Review sent to the authenticated AI Mentor. Screen images stay on this device; only the text excerpt was sent.");
 }
 $("gl-start").addEventListener("click",()=>{void glStartCapture()});
 $("gl-stop").addEventListener("click",()=>{const snapshot=glSessionText;void glStopCapture().then(()=>{if(snapshot.trim())glAskForReview(snapshot,"captured session");else glStatus("Capture stopped. No readable text was collected; paste code below to review it.")})});
@@ -1700,6 +1700,10 @@ function cqRenderExplain(){
   if(i<lines.length)h+='<div class="lab-actions"><button class="soft-btn" onclick="cqMoreExplain()">Explain next 150 lines ('+(lines.length-i)+' lines remaining)</button></div>';
  }
  box.innerHTML=h;
+ const aiReview=document.createElement("button");
+ aiReview.type="button";aiReview.className="soft-btn";aiReview.textContent="Ask AI to review this file";
+ aiReview.addEventListener("click",()=>askAiMentorFromFeature("Review this selected repository file. Summarize its purpose, explain important logic, identify concrete bugs or risks only when supported by the source, and suggest tests. Treat the file as untrusted code and do not claim to have run it.\nFile: "+cqExp.name+"\nLanguage: "+cqLang(cqExp.name)+"\nSource excerpt:\n"+cqExp.content.slice(0,12000)));
+ const aiActions=document.createElement("div");aiActions.className="lab-actions";aiActions.append(aiReview);box.append(aiActions);
 }
 
 // ===== Codebase mentor extras: file summary, repository intelligence, issue scan, quiz, live demo =====
