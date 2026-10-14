@@ -11,7 +11,6 @@ function createMainWindow() {
     width: 1440, height: 940, minWidth: 900, minHeight: 640,
     title: "CodeQuest", backgroundColor: "#0b1020", autoHideMenuBar: true,
     webPreferences: {
-      preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true, nodeIntegration: false, sandbox: true
     }
   });
