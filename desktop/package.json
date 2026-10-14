@@ -23,6 +23,8 @@
     "files": [
       "main.cjs",
       "preload.cjs",
+      "assistant.html",
+      "assistant-renderer.js",
       "package.json"
     ],
     "win": {
