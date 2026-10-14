@@ -23,11 +23,17 @@ npm run dist:mac
 npm run dist:linux
 ```
 
-Installers are written to `desktop/dist/`. Build and test on the target operating system. macOS distribution generally requires signing/notarization for a smooth install.
+The Windows NSIS installer, macOS DMG and ZIP update package, and Linux AppImage are written to `desktop/dist/`. macOS distribution generally requires signing/notarization for a smooth install.
 
-## CI and releases
+## Cross-platform updates
 
-`.github/workflows/desktop-ci.yml` runs unit tests, syntax checks, and Windows/macOS/Linux installer builds sequentially on relevant pull requests and pushes. Build artifacts are retained for 14 days. The desktop integration CI run completed all four stages successfully; run it again for any later changes. `.github/workflows/desktop-release.yml` builds the three installers for a `desktop-v*` tag and publishes a **draft** GitHub Release with the assets. Review the draft and test each installer before making a release public. The website's Download Desktop page links to GitHub Releases.
+- Installed builds check GitHub Releases after startup and every six hours.
+- Users can choose **Help → Check for Updates…** at any time. The app reports when it is current or when a check fails.
+- Available updates download in the background. When ready, the app offers **Restart and Install** or **Later**.
+- Updates use the GitHub Releases provider for `DangerZone8/AI_Mentor`. Release assets must include `latest.yml` (Windows), `latest-mac.yml` plus the ZIP package (macOS), and `latest-linux.yml` plus the AppImage (Linux).
+- Publish a new version through Actions → **Build CodeQuest Desktop** using a higher semantic version (for example `0.1.1`). The workflow sets the package version for the build, builds all three platforms, validates update metadata, and publishes the installers/metadata to a GitHub Release.
+- Existing installations can only update automatically if they were built with this updater and the same app identity. Users of older builds must install a new updater-enabled installer once.
+- Updates require internet access and a public release. macOS signing/notarization and Linux distribution-specific packaging may still affect installation experience.
 
 ## Implemented features
 
@@ -46,7 +52,7 @@ Installers are written to `desktop/dist/`. Build and test on the target operatin
 
 The backend must be deployed and configured with server-side `OPENAI_API_KEY`, `SUPABASE_URL`, and `SUPABASE_PUBLISHABLE_KEY`. The desktop assistant requires the correct backend URL and a valid Supabase session. The desktop assistant accepts only the configured CodeQuest origin or the explicit `CODEQUEST_API_BASE_URL` origin (localhost is allowed for development). This prevents a typo or arbitrary URL from receiving the bearer token. If the frontend uses a different backend host, configure the trusted origin before launching the app. Never paste an OpenAI API key into the desktop app.
 
-This is not yet a complete Constella replacement. Persistent SQLite memory, semantic vector retrieval/embeddings, knowledge graph, scheduler, MCP servers, and a full agent framework are not implemented. Meeting microphone/system-audio recording, speech transcription, speaker diarization, and live spoken-response suggestions are not implemented yet. The custom CodeQuest mark is now used in the web workspace and assistant panel; the packaged Windows executable still needs a dedicated ICO/PNG installer icon. The screen-aware feature requires the user to start capture and select a source; it is not a hidden screen-sharing bypass. Code signing/notarization, automatic updates, and end-to-end testing are also pending.
+This is not yet a complete Constella replacement. Persistent SQLite memory, semantic vector retrieval/embeddings, knowledge graph, scheduler, MCP servers, and a full agent framework are not implemented. Meeting microphone/system-audio recording, speech transcription, speaker diarization, and live spoken-response suggestions are not implemented yet. The custom CodeQuest mark is used in the web workspace and assistant panel; the packaged Windows executable still needs a dedicated ICO/PNG installer icon. The screen-aware feature requires the user to start capture and select a source; it is not a hidden screen-sharing bypass. Code signing/notarization and end-to-end testing remain pending.
 
 ## Constella upstream licensing
 
