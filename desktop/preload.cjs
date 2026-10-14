@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld("codeQuestDesktop", Object.freeze({
   searchLocalFiles: (query) => ipcRenderer.invoke("codequest:search-local-files", String(query || "").slice(0, 300)),
   getAppConfig: () => ipcRenderer.invoke("codequest:get-app-config"),
   getSessionToken: () => ipcRenderer.invoke("codequest:get-session-token"),
+  assistantControl: (action) => ipcRenderer.invoke("codequest:assistant-control", String(action || "")),
   mentorChat: (request) => ipcRenderer.invoke("codequest:mentor-chat", {
     base: String(request?.base || "").slice(0, 500),
     token: String(request?.token || "").slice(0, 8192),
