@@ -26,3 +26,26 @@ ask.addEventListener("click", async () => {
   } finally { ask.disabled = false; }
 });
 $("clear").addEventListener("click", () => { $("prompt").value = ""; answer.textContent = "Your answer will appear here."; status.textContent = "Ready"; });
+
+const indexButton = $("index");
+if (window.codeQuestDesktop && window.codeQuestDesktop.isDesktopApp) {
+  indexButton.addEventListener("click", async () => {
+    indexButton.disabled = true;
+    $("indexStatus").textContent = "Choose a folder…";
+    try {
+      const result = await window.codeQuestDesktop.chooseIndexFolder();
+      $("indexStatus").textContent = result.canceled ? "Indexing cancelled" : `Indexed ${result.files} text/code files from selected folder`;
+    } catch (error) { $("indexStatus").textContent = error.message || "Could not index folder"; }
+    finally { indexButton.disabled = false; }
+  });
+  $("searchLocal").addEventListener("click", async () => {
+    const results = await window.codeQuestDesktop.searchLocalFiles($("localSearch").value);
+    $("localResults").textContent = results.results.length
+      ? results.results.map(item => `${item.path} (score ${item.score})\\n${item.excerpt}`).join("\\n\\n---\\n\\n")
+      : "No matches. Index a folder first or try different search terms.";
+  });
+} else {
+  indexButton.disabled = true;
+  $("searchLocal").disabled = true;
+  $("localResults").textContent = "Local project indexing is available in the installed desktop app.";
+}
