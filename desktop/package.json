@@ -27,8 +27,7 @@
       "assistant.html",
       "assistant-renderer.js",
       "local-indexer.cjs",
-      "package.json",
-      "local-indexer.test.cjs"
+      "package.json"
     ],
     "win": {
       "target": [
