@@ -5,6 +5,8 @@ on:
     paths:
       - "desktop/**"
       - "frontend/**"
+      - "integrations/**"
+      - ".gitmodules"
       - ".github/workflows/desktop-ci.yml"
       - ".github/workflows/frontend-ci.yml"
   push:
@@ -16,6 +18,25 @@ permissions:
   contents: read
 
 jobs:
+  validate-upstream-pins:
+    name: 0 - Validate unmodified upstream source pins
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Verify pinned upstream revisions and untouched source trees
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C integrations/free-cluely rev-parse HEAD)" = "712ddb3474af22886cd47786f7bb0f0a5bf526df"
+          test "$(git -C integrations/OpenCluely rev-parse HEAD)" = "c54c1199e3befda7649371c5283655f3bf27e724"
+          test -f integrations/free-cluely/LICENSE
+          test -f integrations/OpenCluely/LICENSE
+          test -z "$(git -C integrations/free-cluely status --porcelain)"
+          test -z "$(git -C integrations/OpenCluely status --porcelain)"
+          echo "Both upstream repositories are checked out at the pinned commits with clean working trees."
+
   test:
     name: 1 - Unit tests and syntax
     runs-on: ubuntu-latest
