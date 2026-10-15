@@ -1,0 +1,6 @@
+[submodule "integrations/free-cluely"]
+	path = integrations/free-cluely
+	url = https://github.com/Prat011/free-cluely.git
+[submodule "integrations/OpenCluely"]
+	path = integrations/OpenCluely
+	url = https://github.com/TechyCSR/OpenCluely.git
